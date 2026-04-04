@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MonoMatrix Calendar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #000000;
+            --fg-color: #FFFFFF;
+            --dim-color: #444444;
+            --glow-color: rgba(255, 255, 255, 0.6);
+            --dot-size: 14px; 
+            --dot-gap: 14px;
+            --anim-speed: 0.4s;
+            --panel-bg: rgba(20, 20, 20, 0.8);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 0%, #222 0%, #000 70%);
+            color: var(--fg-color);
+            font-family: 'Roboto Mono', monospace;
+            overflow: hidden;
+        }
+
+        /* --- LAYER MANAGEMENT --- */
+        #app-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: transform var(--anim-speed) cubic-bezier(0.2, 0.8, 0.2, 1), opacity var(--anim-speed);
+        }
+
+        /* --- SPLASH SCREEN --- */
+        #splash-screen {
+            z-index: 10;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+        }
+
+        canvas {
+            image-rendering: pixelated; 
+        }
+
+        .unlock-hint {
+            position: absolute;
+            bottom: 50px;
+            font-size: 12px;
+            opacity: 0;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px var(--fg-color);
+            animation: fadeInOut 2s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        /* --- CALENDAR SCREEN (HUD LAYOUT) --- */
+        #calendar-screen {
+            z-index: 5;
+            transform: scale(0.98);
+            opacity: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 15px;
+        }
+
+        /* TOP HEADER */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--dim-color);
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-size: 1.1rem;
+            margin: 0;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        .nav-btn {
+            background: none;
+            border: 1px solid var(--dim-color);
+            color: var(--fg-color);
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .nav-btn:hover {
+            border-color: var(--fg-color);
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* MAIN HUD CONTENT */
+        #hud-container {
+            flex: 1;
+            display: flex;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        /* Left Panel: The Grid */
+        #grid-panel {
+            flex: 1; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 10px;
+            /* overflow-y: auto; handled via swipe now */
+            touch-action: pan-y; /* Allow vertical scroll if needed, block horizontal */
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: var(--dot-gap);
+            padding: 10px;
+        }
+
+        .day-label {
+            font-size: 0.7rem;
+            color: var(--dim-color);
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        /* Right Panel: Data Deck (Focus Panel) */
+        #data-deck {
+            flex: 1;
+            background: var(--panel-bg);
+            border: 1px solid var(--dim-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            position: relative;
+        }
+        
+        #data-deck::before {
+            content: 'DATA_LINK__ACTIVE';
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: var(--bg-color);
+            font-size: 0.6rem;
+            padding: 0 5px;
+            color: var(--dim-color);
+        }
+
+        #deck-date {
+            font-size: 1.5rem;
+            border-bottom: 1px dashed var(--dim-color);
+            padding-bottom: 10px;
+            margin: 0;
+        }
+
+        #event-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--fg-color);
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+        }
+
+        #event-input::placeholder {
+            color: var(--dim-color);
+            opacity: 0.5;
+        }
+
+        .deck-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--dim-color);
+            background: rgba(0,0,0,0.5);
+            color: var(--fg-color);
+            font-family: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            border-color: var(--fg-color);
+            background: var(--fg-color);
+            color: var(--bg-color);
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+
+        /* BOTTOM STATS BAR */
+        #status-bar {
+            height: 40px;
+            border-top: 1px solid var(--dim-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 10px;
+            font-size: 0.7rem;
+            color: var(--dim-color);
+        }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 60%;
+        }
+
+        .xp-bar {
+            flex: 1;
+            height: 6px;
+            background: #222;
+            border: 1px solid #333;
+            position: relative;
+        }
+
+        .xp-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: var(--fg-color);
+            width: 0%; 
+            box-shadow: 0 0 5px var(--glow-color);
+            transition: width 1s ease-out;
+        }
+
+        /* --- DOT STYLES & ANIMATIONS --- */
+        .dot {
+            width: var(--dot-size);
+            height: var(--dot-size);
+            border-radius: 50%;
+            /* transition: all 0.3s ease; Removed to let animation handle transform */
+            cursor: pointer;
+            position: relative;
+            /* Default State */
+            transform: scale(1) translate(0,0);
+            opacity: 1;
+        }
+
+        /* Styles for Static States */
+        .dot.past { background-color: #333; box-shadow: inset 0 0 2px #000; }
+        .dot.future { border: 1px solid #333; background-color: transparent; }
+        .dot.today {
+            background-color: transparent; border: 2px solid var(--fg-color);
+            box-shadow: 0 0 10px var(--glow-color);
+            animation: pulse-ring 3s infinite;
+        }
+        .dot.has-event { background-color: var(--fg-color); box-shadow: 0 0 8px var(--glow-color); }
+        .dot.selected {
+            transform: scale(1.4); border-color: var(--fg-color);
+            background-color: var(--bg-color); border: 2px solid var(--fg-color); z-index: 2;
+        }
+        .dot.selected::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); width: 4px; height: 4px; background: var(--fg-color);
+        }
+
+        /* ANIMATION: FALL (Disintegrate) */
+        @keyframes fall {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--vx), 150px) scale(0.4); opacity: 0; }
+        }
+
+        .dot.fall {
+            animation: fall 0.4s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+            animation-delay: var(--delay);
+            pointer-events: none; /* Lock input on falling dots */
+        }
+
+        /* ANIMATION: RISE (Rebuild) */
+        @keyframes rise {
+            0% { transform: translateY(60px) scale(0.5); opacity: 0; }
+            70% { transform: translateY(-5px) scale(1.1); opacity: 1; } /* Bounce overshoot */
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .dot.rise {
+            animation: rise 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation-delay: var(--delay);
+            /* Reset opacity to 0 initially so they don't flash before anim starts */
+            opacity: 0; 
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        }
+
+        /* MOBILE RESPONSIVENESS */
+        @media (max-width: 600px) {
+            #hud-container { flex-direction: column; }
+            #data-deck { max-height: 250px; flex: none; }
+            .calendar-grid { gap: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    
+    <!-- LAYER 1: SPLASH & LOCK SCREEN -->
+    <div id="splash-screen" class="screen">
+        <canvas id="matrix-canvas"></canvas>
+        <div class="unlock-hint" id="unlock-text">SYSTEM READY // SWIPE ACCESS ></div>
+    </div>
+
+    <!-- LAYER 2: MAIN CALENDAR (HUD) -->
+    <div id="calendar-screen" class="screen">
+        <header>
+            <button class="nav-btn" id="prev-month">&lt;</button>
+            <h1 id="month-display">JANUARY 2026</h1>
+            <button class="nav-btn" id="next-month">&gt;</button>
+        </header>
+
+        <div id="hud-container">
+            <!-- Left: Calendar Grid -->
+            <div id="grid-panel">
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Days injected via JS -->
+                </div>
+            </div>
+
+            <!-- Right: Focus Panel (Data Deck) -->
+            <div id="data-deck">
+                <h2 id="deck-date">SELECT NODE</h2>
+                <textarea id="event-input" placeholder="// No data log found. &#10;// Type to initialize entry..."></textarea>
+                <div class="deck-actions">
+                    <button class="action-btn" id="save-btn">EXECUTE SAVE</button>
+                    <button class="action-btn" id="clear-btn" style="border-color: #555; color: #777;">PURGE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom: Stats Bar -->
+        <div id="status-bar">
+            <div class="progress-container">
+                <span>MONTH SYNC</span>
+                <div class="xp-bar">
+                    <div class="xp-fill" id="month-progress"></div>
+                </div>
+            </div>
+            <div id="active-nodes">ACTIVE NODES: 0</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    /** * MONOMATRIX LOGIC V3 - Physics Animations
+     */
+
+    /* --- 1. SPLASH ANIMATION --- */
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+    const unlockText = document.getElementById('unlock-text');
+    let width, height;
+    let particles = [];
+    let animationFrame;
+    let isStabilized = false;
+
+    // Grid Configuration
+    const gridSize = 20; 
+    const rows = 12;     
+    const cols = 12;     
+
+    const logoMap = [
+        0,0,0,0,0,0,0,0,0,0,0,0,
+        0,1,1,0,0,0,0,0,0,1,1,0,
+        0,1,1,1,0,0,0,0,1,1,1,0,
+        0,1,0,1,1,0,0,1,1,0,1,0,
+        0,1,0,0,1,1,1,1,0,0,1,0,
+        0,1,0,0,0,1,1,0,0,0,1,0,
+        0,1,0,0,0,0,0,0,0,0,1,0,
+        0,1,0,0,0,0,0,0,0,0,1,0,
+        0,1,0,0,0,0,0,0,0,0,1,0,
+        0,1,0,0,0,0,0,0,0,0,1,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,
+    ];
+
+    function initCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        
+        const gridW = cols * gridSize;
+        const gridH = rows * gridSize;
+        const startX = (width - gridW) / 2;
+        const startY = (height - gridH) / 2;
+
+        particles = [];
+        for (let i = 0; i < logoMap.length; i++) {
+            const c = i % cols;
+            const r = Math.floor(i / cols);
+            
+            particles.push({
+                x: startX + (c * gridSize),
+                y: startY + (r * gridSize),
+                targetOpacity: logoMap[i],
+                opacity: 0,
+                flickerSpeed: Math.random() * 0.1 + 0.05
+            });
+        }
+    }
+
+    function animateSplash() {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, width, height);
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for(let x=0; x<width; x+=40) { ctx.moveTo(x,0); ctx.lineTo(x,height); }
+        ctx.stroke();
+
+        let allStabilized = true;
+
+        particles.forEach(p => {
+            if (!isStabilized) {
+                p.opacity = Math.random() > 0.5 ? 1 : 0;
+            } else {
+                const diff = p.targetOpacity - p.opacity;
+                p.opacity += diff * 0.1;
+                if (Math.abs(diff) > 0.1) allStabilized = false;
+            }
+
+            ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+            ctx.fillRect(p.x, p.y, gridSize - 4, gridSize - 4);
+        });
+
+        if (isStabilized && allStabilized) {
+            cancelAnimationFrame(animationFrame);
+            unlockText.style.opacity = 1;
+        } else {
+            animationFrame = requestAnimationFrame(animateSplash);
+        }
+    }
+
+    initCanvas();
+    animateSplash();
+    setTimeout(() => { isStabilized = true; }, 1500);
+
+
+    /* --- 2. SPLASH SWIPE LOGIC --- */
+    const splashScreen = document.getElementById('splash-screen');
+    const calendarScreen = document.getElementById('calendar-screen');
+    let splashStartX = 0;
+    let splashTranslate = 0;
+    let splashDragging = false;
+
+    splashScreen.addEventListener('touchstart', e => {
+        splashStartX = e.touches[0].clientX;
+        splashDragging = true;
+    });
+
+    splashScreen.addEventListener('touchmove', e => {
+        if(!splashDragging) return;
+        const currentX = e.touches[0].clientX;
+        const diff = currentX - splashStartX;
+        if (diff > 0) {
+            splashTranslate = diff;
+            splashScreen.style.transform = `translateX(${splashTranslate}px)`;
+            splashScreen.style.opacity = 1 - (splashTranslate / width);
+        }
+    });
+
+    splashScreen.addEventListener('touchend', endSplashSwipe);
+    
+    // Mouse fallback
+    splashScreen.addEventListener('mousedown', e => {
+        splashStartX = e.clientX;
+        splashDragging = true;
+    });
+    window.addEventListener('mousemove', e => {
+        if(!splashDragging) return;
+        const diff = e.clientX - splashStartX;
+        if(diff > 0) {
+            splashTranslate = diff;
+            splashScreen.style.transform = `translateX(${splashTranslate}px)`;
+            splashScreen.style.opacity = 1 - (splashTranslate / width);
+        }
+    });
+    window.addEventListener('mouseup', endSplashSwipe);
+
+    function endSplashSwipe() {
+        if(!splashDragging) return;
+        splashDragging = false;
+        if (splashTranslate > width * 0.25) {
+            splashScreen.style.transition = '0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            splashScreen.style.transform = `translateX(${width}px)`;
+            setTimeout(() => {
+                splashScreen.style.display = 'none';
+                calendarScreen.style.opacity = 1;
+                calendarScreen.style.transform = 'scale(1)';
+                selectToday();
+            }, 300);
+        } else {
+            splashScreen.style.transform = `translateX(0px)`;
+            splashScreen.style.opacity = 1;
+        }
+        splashTranslate = 0;
+    }
+
+
+    /* --- 3. CALENDAR ANIMATION & LOGIC (ENHANCED) --- */
+    let navDate = new Date();
+    const grid = document.getElementById('calendar-grid');
+    const monthDisplay = document.getElementById('month-display');
+    const deckDate = document.getElementById('deck-date');
+    const eventInput = document.getElementById('event-input');
+    const xpFill = document.getElementById('month-progress');
+    const activeNodesDisplay = document.getElementById('active-nodes');
+    
+    let selectedDateKey = null;
+    let isAnimating = false; // Lock input during transitions
+
+    function getEvents() {
+        return JSON.parse(localStorage.getItem('monoEvents')) || {};
+    }
+
+    function saveCurrentEvent() {
+        if (!selectedDateKey) return;
+        const text = eventInput.value;
+        const events = getEvents();
+        if (text.trim() === "") { delete events[selectedDateKey]; } 
+        else { events[selectedDateKey] = text; }
+        localStorage.setItem('monoEvents', JSON.stringify(events));
+        
+        const btn = document.getElementById('save-btn');
+        const originalText = btn.innerText;
+        btn.innerText = "SAVED";
+        btn.style.background = "#fff";
+        btn.style.color = "#000";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = "";
+            btn.style.color = "";
+        }, 500);
+        
+        // Re-render without animation to show updated dot status
+        renderCalendar(false, false);
+    }
+
+    function clearCurrentEvent() {
+        if(!selectedDateKey) return;
+        eventInput.value = "";
+        saveCurrentEvent();
+    }
+
+    // --- ANIMATION SEQUENCE CONTROLLER ---
+    function switchMonth(offset) {
+        if (isAnimating) return;
+        isAnimating = true;
+
+        // PHASE 1: DISINTEGRATE (Fall)
+        const dots = document.querySelectorAll('.dot');
+        const totalDots = dots.length;
+        
+        dots.forEach((dot, index) => {
+            // Random horizontal drift (-20px to 20px)
+            const vx = (Math.random() * 40 - 20) + 'px';
+            // Stagger delay based on row (approx)
+            const row = Math.floor(index / 7);
+            const delay = (row * 0.05) + 's';
+            
+            dot.style.setProperty('--vx', vx);
+            dot.style.setProperty('--delay', delay);
+            dot.classList.add('fall');
+        });
+
+        // Wait for fall to finish (approx 400ms + max delay)
+        setTimeout(() => {
+            navDate.setMonth(navDate.getMonth() + offset);
+            
+            // PHASE 2: REBUILD (Rise)
+            renderCalendar(true, true); // true = reset selection, true = animate entrance
+            
+            // Unlock after rise finishes
+            setTimeout(() => {
+                isAnimating = false;
+            }, 600);
+            
+        }, 500);
+    }
+
+
+    function renderCalendar(resetSelection = true, animateEntrance = false) {
+        grid.innerHTML = '';
+        const year = navDate.getFullYear();
+        const month = navDate.getMonth();
+        
+        const monthNames = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+        monthDisplay.innerText = `${monthNames[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0); 
+        const daysInMonth = lastDay.getDate();
+        const startDayIndex = firstDay.getDay(); 
+
+        // Update XP Bar
+        const today = new Date();
+        let progress = 0;
+        if (year < today.getFullYear() || (year === today.getFullYear() && month < today.getMonth())) {
+            progress = 100;
+        } else if (year === today.getFullYear() && month === today.getMonth()) {
+            progress = (today.getDate() / daysInMonth) * 100;
+        }
+        xpFill.style.width = `${progress}%`;
+
+        // Labels
+        const daysShort = ['S','M','T','W','T','F','S'];
+        daysShort.forEach(d => {
+            const el = document.createElement('div');
+            el.className = 'day-label';
+            el.innerText = d;
+            grid.appendChild(el);
+        });
+
+        for(let i=0; i<startDayIndex; i++) {
+            const empty = document.createElement('div');
+            grid.appendChild(empty);
+        }
+
+        const events = getEvents();
+        let monthEventCount = 0;
+
+        for(let i=1; i<=daysInMonth; i++) {
+            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            dot.dataset.date = dateStr;
+
+            // Logic: Past/Future
+            const currentCheck = new Date(year, month, i);
+            currentCheck.setHours(0,0,0,0);
+            const realTodayZero = new Date(today);
+            realTodayZero.setHours(0,0,0,0);
+
+            if (currentCheck.getTime() < realTodayZero.getTime()) {
+                dot.classList.add('past');
+            } else if (currentCheck.getTime() > realTodayZero.getTime()) {
+                dot.classList.add('future');
+            } else {
+                dot.classList.add('today');
+            }
+
+            if (events[dateStr]) {
+                dot.classList.add('has-event');
+                monthEventCount++;
+            }
+
+            if (dateStr === selectedDateKey && !resetSelection) {
+                dot.classList.add('selected');
+            }
+
+            // Apply Rise Animation if requested
+            if (animateEntrance) {
+                // Calculate rough row index for staggering
+                // (i + startDayIndex) / 7 gives row
+                const rowIndex = Math.floor((i + startDayIndex - 1) / 7);
+                const delay = (rowIndex * 0.05) + 's';
+                dot.style.setProperty('--delay', delay);
+                dot.classList.add('rise');
+            }
+
+            dot.addEventListener('click', () => {
+                if(!isAnimating) selectDate(dateStr, dot);
+            });
+
+            grid.appendChild(dot);
+        }
+
+        activeNodesDisplay.innerText = `ACTIVE NODES: ${monthEventCount}`;
+    }
+
+
+    function selectDate(dateStr, dotElement) {
+        selectedDateKey = dateStr;
+        document.querySelectorAll('.dot').forEach(d => d.classList.remove('selected'));
+        if(dotElement) dotElement.classList.add('selected');
+        else {
+             const target = document.querySelector(`.dot[data-date="${dateStr}"]`);
+             if(target) target.classList.add('selected');
+        }
+
+        const [y, m, d] = dateStr.split('-');
+        deckDate.innerText = `${d}.${m}.${y}`;
+        const events = getEvents();
+        eventInput.value = events[dateStr] || "";
+        eventInput.focus();
+    }
+
+    function selectToday() {
+        const today = new Date();
+        const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        if(navDate.getMonth() === today.getMonth() && navDate.getFullYear() === today.getFullYear()) {
+            selectDate(dateStr);
+        }
+    }
+
+    // --- CONTROLS ---
+    document.getElementById('save-btn').addEventListener('click', saveCurrentEvent);
+    document.getElementById('clear-btn').addEventListener('click', clearCurrentEvent);
+
+    // Month Navigation now calls switchMonth
+    document.getElementById('prev-month').addEventListener('click', () => switchMonth(-1));
+    document.getElementById('next-month').addEventListener('click', () => switchMonth(1));
+
+
+    /* --- 4. CALENDAR SWIPE LOGIC (NEW) --- */
+    const gridPanel = document.getElementById('grid-panel');
+    let calStartX = 0;
+    
+    gridPanel.addEventListener('touchstart', e => {
+        calStartX = e.touches[0].clientX;
+    }, {passive: true});
+
+    gridPanel.addEventListener('touchend', e => {
+        const endX = e.changedTouches[0].clientX;
+        const diff = endX - calStartX;
+        
+        if (Math.abs(diff) > 50) { // 50px threshold
+            if (diff > 0) {
+                // Swipe Right -> Prev Month
+                switchMonth(-1);
+            } else {
+                // Swipe Left -> Next Month
+                switchMonth(1);
+            }
+        }
+    }, {passive: true});
+    
+    // Mouse Support for Calendar Swipe
+    let calMouseDown = false;
+    gridPanel.addEventListener('mousedown', e => {
+        calStartX = e.clientX;
+        calMouseDown = true;
+    });
+    gridPanel.addEventListener('mouseup', e => {
+        if(!calMouseDown) return;
+        calMouseDown = false;
+        const diff = e.clientX - calStartX;
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) switchMonth(-1);
+            else switchMonth(1);
+        }
+    });
+    gridPanel.addEventListener('mouseleave', () => calMouseDown = false);
+
+
+    // Initialize
+    renderCalendar(true, true); // Initial animated render
+
+</script>
+</body>
+</html>

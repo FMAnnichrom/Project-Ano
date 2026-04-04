@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Anonymity - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .card-container {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background: rgba(23, 23, 23, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn { transition: all 0.3s ease; }
+        .btn-logout {
+            background-color: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+        }
+        .btn-logout:hover {
+            background-color: rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        }
+        .btn-danger {
+            background-color: rgba(220, 38, 38, 0.3);
+            border: 1px solid rgba(220, 38, 38, 0.6);
+        }
+        .btn-danger:hover {
+            background-color: rgba(220, 38, 38, 0.5);
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.5);
+        }
+        .btn-confirm {
+             background-color: rgba(239, 68, 68, 0.5);
+             border: 1px solid rgba(239, 68, 68, 0.7);
+        }
+        .btn-confirm:hover {
+            background-color: rgba(239, 68, 68, 0.7);
+        }
+        .btn-cancel {
+            background-color: rgba(107, 114, 128, 0.3);
+            border: 1px solid rgba(107, 114, 128, 0.5);
+        }
+        .btn-cancel:hover {
+             background-color: rgba(107, 114, 128, 0.5);
+        }
+        .btn-secondary {
+            background-color: rgba(79, 70, 229, 0.2);
+            border: 1px solid rgba(79, 70, 229, 0.5);
+        }
+        .btn-secondary:hover {
+            background-color: rgba(79, 70, 229, 0.4);
+        }
+        .student-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .student-card:hover {
+            border-color: rgba(79, 70, 229, 0.7);
+            transform: scale(1.03);
+            box-shadow: 0 8px 30px rgba(79, 70, 229, 0.3);
+            background: rgba(23, 23, 23, 0.8);
+        }
+        .student-card h3 {
+            transition: transform 0.3s ease, color 0.3s ease;
+            transform-origin: left;
+        }
+        .student-card:hover h3 {
+            transform: scale(1.05);
+            color: #c7d2fe;
+        }
+        .star-rating .star {
+            color: #4a5568;
+            cursor: pointer;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+        .star-rating .star.selected {
+            color: #f6e05e;
+        }
+        .star-rating .star.hover-yellow { color: #f6e05e; }
+
+        .modal {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: rgba(23, 23, 23, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .bg-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; background-color: #0d0d0d; }
+        .bg-animation .particle { position: absolute; background: #4f46e5; border-radius: 50%; opacity: 0; animation: rise 10s infinite linear; }
+        @keyframes rise {
+            0% { transform: translateY(100vh); opacity: 1; }
+            100% { transform: translateY(-10vh); opacity: 0; }
+        }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
+        #voter-details-container, #user-management-container {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease-in-out;
+            max-height: 0;
+            overflow: hidden;
+        }
+        #voter-details-container.visible, #user-management-container.visible {
+            max-height: 400px;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+        }
+        #voter-list, #user-list {
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .delete-rating-btn, .delete-user-btn {
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .delete-rating-btn:hover, .delete-user-btn:hover {
+            color: #f87171;
+        }
+    </style>
+</head>
+<body class="bg-black text-gray-200">
+
+    <div class="bg-animation" id="bg-animation"></div>
+
+    <div class="min-h-screen p-4 sm:p-6 lg:p-8">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-2xl md:text-3xl font-bold font-orbitron text-white tracking-widest">DASHBOARD</h1>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-400">Welcome, <span id="current-user" class="font-bold text-indigo-300"></span></span>
+                <button id="manage-users-btn" class="btn btn-secondary text-white font-bold py-2 px-4 rounded-md text-sm hidden">Manage Users</button>
+                <button id="clear-ratings-btn" class="btn btn-danger text-yellow-300 font-bold py-2 px-4 rounded-md text-sm hidden">Clear All Ratings</button>
+                <button id="logout-btn" class="btn btn-logout text-red-300 font-bold py-2 px-4 rounded-md text-sm">Logout</button>
+            </div>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Main Content -->
+            <main id="dashboard-content" class="flex-grow card-container rounded-lg p-6 shadow-2xl">
+                <h2 class="text-xl font-bold mb-6 border-b border-gray-700 pb-3">Class Roster (Sorted by Name)</h2>
+                <div id="student-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <!-- Student cards will be injected here by JS -->
+                </div>
+            </main>
+
+            <!-- Sidebar -->
+            <aside class="lg:w-1/3 xl:w-1/4 flex-shrink-0">
+                <div class="card-container rounded-lg p-6 shadow-2xl">
+                    <h2 class="text-xl font-bold mb-6 border-b border-gray-700 pb-3">Top 3 Rated</h2>
+                    <div id="top-rated-list" class="space-y-4">
+                        <!-- Top rated students will be injected here -->
+                    </div>
+                </div>
+            </aside>
+        </div>
+         <p id="message" class="text-center text-green-400 mt-6 text-sm h-4"></p>
+    </div>
+
+    <!-- Student Detail Modal -->
+    <div id="student-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden modal fade-in">
+        <div class="modal-content rounded-lg p-8 shadow-2xl w-full max-w-lg text-center relative overflow-y-auto max-h-screen">
+            <button id="close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+            <img id="modal-img" src="" alt="Student photo" class="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-indigo-400">
+            <h3 id="modal-name" class="text-2xl font-bold text-white mb-2"></h3>
+            <p class="text-indigo-300 mb-4" id="modal-roll"></p>
+            <div class="space-y-2 text-gray-300 mb-6 text-sm">
+                <div class="flex text-left"><p class="font-bold text-gray-400 w-32 flex-shrink-0">Age:</p><p id="modal-age"></p></div>
+                <div class="flex text-left"><p class="font-bold text-gray-400 w-32 flex-shrink-0">Father's Name:</p><p id="modal-father-name"></p></div>
+                <div class="flex text-left"><p class="font-bold text-gray-400 w-32 flex-shrink-0">Email:</p><p id="modal-email" class="break-words"></p></div>
+                <div class="flex text-left"><p class="font-bold text-gray-400 w-32 flex-shrink-0">Mobile:</p><p id="modal-mobile"></p></div>
+                <div class="flex text-left"><p class="font-bold text-gray-400 w-32 flex-shrink-0">Parent's Mobile:</p><p id="modal-parent-mobile"></p></div>
+                <div class="flex text-left"><p class="font-bold text-gray-400 w-32 flex-shrink-0">Address:</p><p id="modal-address" class="break-words"></p></div>
+                <div class="flex text-left"><p class="font-bold text-gray-400 w-32 flex-shrink-0">Local Guardian:</p><p id="modal-guardian" class="break-words"></p></div>
+            </div>
+            <h4 class="text-lg font-bold text-white mb-3">Your Rating</h4>
+            <div id="modal-star-rating" class="star-rating flex flex-row-reverse justify-center items-center mb-6" data-rating="0">
+                <!-- Stars for rating will be injected here -->
+            </div>
+
+            <button id="show-voters-btn" class="btn btn-secondary text-white font-bold py-2 px-6 rounded-md w-full">Show Rating Details</button>
+            <div id="voter-details-container" class="">
+                <h5 class="text-md font-bold text-white mb-3">Rating Details</h5>
+                <ul id="voter-list" class="space-y-2 text-gray-400 text-sm">
+                    <!-- Voter list items will be injected here -->
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Management Modal -->
+    <div id="user-management-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden modal fade-in">
+        <div class="modal-content rounded-lg p-8 shadow-2xl w-full max-w-lg text-center relative">
+            <button id="close-user-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+            <h3 class="text-2xl font-bold text-white mb-6">User Management</h3>
+            <ul id="user-list" class="space-y-2 text-gray-300 mb-6">
+                <!-- User list will be populated here -->
+            </ul>
+            <button id="delete-all-users-btn" class="btn btn-danger text-white font-bold py-2 px-6 rounded-md w-full">Delete All Users</button>
+        </div>
+    </div>
+
+    <!-- General Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden modal fade-in">
+        <div class="modal-content rounded-lg p-8 shadow-2xl w-full max-w-sm text-center relative">
+             <h3 id="confirm-title" class="text-xl font-bold text-white mb-4">Confirm Action</h3>
+             <p id="confirm-message" class="text-gray-300 mb-6">Are you sure?</p>
+             <div class="flex justify-center gap-4">
+                 <button id="confirm-cancel-btn" class="btn btn-cancel text-white font-bold py-2 px-6 rounded-md">Cancel</button>
+                 <button id="confirm-action-btn" class="btn btn-confirm text-white font-bold py-2 px-6 rounded-md">Confirm</button>
+             </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const LOGGED_IN_USER_KEY = 'project_anonymity_current_user';
+            const RATINGS_STORAGE_KEY = 'project_anonymity_ratings';
+            const USERS_STORAGE_KEY = 'project_anonymity_users';
+            
+            const STUDENT_DATA = [
+                { "roll": "O-33", "name": "ATAL RAJ", "fatherName": "SOCHENDRA NARAYAN SINGH", "mobile": "7257940416", "email": "b240395@skit.ac.in atalraj12345678@gmail.com", "parentMobile": "9264235903", "address": "Rampatti , singheshwar , Madhepura Bihar 852128", "guardian": "7739961940" },
+                { "roll": "O-34", "name": "AVISH WADHWA", "fatherName": "PARVEEN KUMAR WADHWA", "mobile": "8233028549", "email": "avishwadhwa1286@gmail.com b241573@skit.ac.in", "parentMobile": "8561967745", "address": "76-77 Jyoti Nagar, Dawra Colony Sriganganagar, Rajasthan 335001", "guardian": "" },
+                { "roll": "O-35", "name": "AWNIKA VIJAYVERGIYA", "fatherName": "ARVIND VIJAY", "mobile": "8000778346", "email": "vijayawanika@gmail.com", "parentMobile": "9772590770", "address": "ward 14 guru nanak colony bundi", "guardian": "" },
+                { "roll": "O-36", "name": "AYUSH GAUTAM", "fatherName": "RAJENDRA GAUTAM", "mobile": "6375115753", "email": "b240881@skit.ac.in ayushgautam50605@gmail.com", "parentMobile": "9660024389", "address": "15-g-10 RK puram B kota ,Raj , 324010", "guardian": "" },
+                { "roll": "O-37", "name": "AYUSH KHANDELWAL", "fatherName": "MANOJ KUMAR SHARMA", "mobile": "9959894050", "email": "b241574@skit.ac.in aayushkkhandelwal@gmail.com", "parentMobile": "7023459488", "address": "Neem ka thana Sikar Rajathana", "guardian": "7733841511" },
+                { "roll": "O-38", "name": "AYUSH SHARMA", "fatherName": "RAJENDRA KUMAR SHARMA", "mobile": "6376877082", "email": "b240649@skit.ac.in sharmaaayush29467@gmail.com", "parentMobile": "9461691450", "address": "T-211, Ganesh vihar,triveni Nagar, rajawas, jaipur, rajasthan 302032.", "guardian": "Parents contact : 9461691450" },
+                { "roll": "O-39", "name": "BHUMIKA GOYAL", "fatherName": "KRISHNA KUMAR GOYAL", "mobile": "8209280122", "email": "b241575@skit.ac.in / bhumika20069@gmail.com", "parentMobile": "8619976400", "address": "D-49,shiv officer's colony, jagatpura, jaipur", "guardian": "" },
+                { "roll": "O-40", "name": "CHARVI MATHUR", "fatherName": "NARENDRA MATHUR", "mobile": "9413512235", "email": "b241686@skit.ac.in/charvimathur469@gmail.com", "parentMobile": "9413240295", "address": "39-Patel nagar, Kalwar road, Jhotwara, jaipur", "guardian": "" },
+                { "roll": "O-41", "name": "CHINTAN JAIN", "fatherName": "TARUN JAIN", "mobile": "6375682041", "email": "jainchintan0906@gmail.com", "parentMobile": "9414030516", "address": "250-A Gayatri Nagar-B Maharani Farm,Durgapura,Jaipur", "guardian": "" },
+                { "roll": "O-42", "name": "DARSHIL AMETA", "fatherName": "DINESH KUMAR AMETA", "mobile": "8529722466", "email": "b241276@skit.ac.in", "parentMobile": "7891030031", "address": "purohit wari, salumbar, udaipur", "guardian": "" },
+                { "roll": "O-43", "name": "DARSHIL MANGAL", "fatherName": "MAHENDRA MANGAL", "mobile": "7877738065", "email": "darshilmangal25@gmail.com b241338@skit.ac.in", "parentMobile": "9636667765", "address": "khanpur road , kawai , baran", "guardian": "" },
+                { "roll": "O-44", "name": "DEEPANSH VYAS", "fatherName": "PRAVEEN VYAS", "mobile": "9977317666", "email": "deepanshvyas1@gmail.com", "parentMobile": "9993132255", "address": "B-6 Housing board colony Mandsaur(M.P)", "guardian": "" },
+                { "roll": "O-45", "name": "DEEPANSHU MODI", "fatherName": "RAJESH MODI", "mobile": "7877935898", "email": "deepanshumodi252005@gmail.com b240312@skit.ac.in", "parentMobile": "8504021292", "address": "4409 Yaghyashala ki Bavadi, Bairwa basti, Purani Basti, Chandpole Bazar, jaipur", "guardian": "" },
+                { "roll": "O-46", "name": "DEEPANSHU SHARMA", "fatherName": "KAUSHAL KISHOR SHARMA", "mobile": "8209740647", "email": "kaushalbaran39@gmail.com", "parentMobile": "9460744566", "address": "sardar disk ke pass, ram nagar colony, tel factory, ward no.24 , baran , rajasthan,325205", "guardian": "" },
+                { "roll": "O-47", "name": "DEV KUMAR PANDEY", "fatherName": "AWADHESH KUMAR PANDEY", "mobile": "9839988151", "email": "b240420@skit.in", "parentMobile": "8601753150", "address": "vill.paranupur,kunda , pratapgarh, Uttar Pradesh 230201", "guardian": "9919760059" },
+                { "roll": "O-48", "name": "DEV SINGHAL", "fatherName": "NAVEEN KUMAR SINGHAL", "mobile": "8005981221", "email": "b240887@skit.ac.in", "parentMobile": "9950101586", "address": "279,Vijay nagar,alwar", "guardian": "" },
+                { "roll": "O-49", "name": "DEVASHISH SHARMA", "fatherName": "RAJENDRA KUMAR SHARMA", "mobile": "8290770245", "email": "b240983@skit.ac.in", "parentMobile": "9414190245", "address": "", "guardian": "" },
+                { "roll": "O-50", "name": "DIVYANSH DANGAYACH", "fatherName": "NAWAL KISHORE DANGAYACH", "mobile": "7014391097", "email": "b241281@skit.ac.in", "parentMobile": "9929453976", "address": "204 shilp colony jhothwara jaipur,302012", "guardian": "Dinesh Kumar dangayach 9983128353" },
+                { "roll": "O-51", "name": "GAURAV KUMAR ATOLIYA", "fatherName": "PRADEEP ATOLIYA", "mobile": "9461085975", "email": "b241104@skit.ac.in", "parentMobile": "8764516586", "address": "keshav chok Laxmangarh alwar", "guardian": "saurabh kumar atoliya - 9782326450" },
+                { "roll": "O-52", "name": "GAURAV SINGH TANWAR", "fatherName": "UMESH SINGH TANWAR", "mobile": "9649529336", "email": "b241578@skit.ac.in", "parentMobile": "9911349336", "address": "152 sunder vihar kalwar road jhotwara jaipur 302012", "guardian": "Vanshika Tanwar - 9870357482" },
+                { "roll": "O-53", "name": "GAUTAM SINGH", "fatherName": "RAJENDRA SINGH TANWAR", "mobile": "8426874217", "email": "b240766@skit.ac.in", "parentMobile": "9413242891", "address": "in front of a. v. m school indra nagar, bharatpur", "guardian": "" },
+                { "roll": "O-54", "name": "GOPAL YOGI", "fatherName": "LAXMAN YOGI", "mobile": "7014944919", "email": "yogig1361@gmail.com", "parentMobile": "8875251830", "address": "ganv-lalpura, post-nayabas, teh.-bansur, dist.-alwar,raj. pin code 301024", "guardian": "" },
+                { "roll": "O-55", "name": "GOURANSHI KHANDELWAL", "fatherName": "SUNIL KHANDELWAL", "mobile": "9256364019", "email": "gourik1904@gmail.com/b241579@skit.ac.in", "parentMobile": "9928670719", "address": "2-ja-19,near chouth mata mandir,teacher's colony,keshavpura, kota", "guardian": "Gaurav Badaya - 9057742964" },
+                { "roll": "O-56", "name": "HARDI MALVIYA", "fatherName": "RAJESH KUMAR MALVIYA", "mobile": "7340141524", "email": "b241580@skit.ac.in / hardi121006@gmail.com", "parentMobile": "9602271524", "address": "3/109,Khandu Colony, Banswara, Rajasthan", "guardian": "" },
+                { "roll": "O-57", "name": "HARDIK SINGHAL", "fatherName": "PAWAN KUMAR SINGHAL", "mobile": "8949795815", "email": "b241581@skit.ac.in", "parentMobile": "8742003983", "address": "GANESH NAGAR, MUHANA ROAD, JAIPUR", "guardian": "" },
+                { "roll": "O-58", "name": "HARSH GOYAL", "fatherName": "VIJAY GOYAL", "mobile": "7976222125", "email": "harshgoyal121212@gmail.com /b241260@skit.ac.in", "parentMobile": "9413146500", "address": "Roop colony, Mohan Nagar , hindaun city ,karauli(322230)", "guardian": "" },
+                { "roll": "O-59", "name": "HARSH VARDHAN JANGIR", "fatherName": "MUKESH KUMAR", "mobile": "9521276136", "email": "harshvardhanjangir0@gmail.com / b240315@skit.ac.in", "parentMobile": "9314330758", "address": "B-20 ekta nagar S , dhawas,jaipur 302006", "guardian": "kavita devi (mother ) - 9119283594" },
+                { "roll": "O-60", "name": "HARSH VERMA", "fatherName": "RAMESH KUMAR VERMA", "mobile": "6350400300", "email": "b240917@skit.ac.in", "parentMobile": "9928433165", "address": "Local: RVG8+82Q, Shri Ram Vihar, Ramnagariya, Jaipur, Rajasthan 302017, Permanent: Lakshmi Nagar, Kotputli Rajasthan 303108", "guardian": "Rahul, Mob: 9971265322" },
+                { "roll": "O-61", "name": "HARSHIL MANGAL", "fatherName": "DEEPAK KUMAR AGARWAL", "mobile": "8302872826", "email": "b241155@skit.ac.in", "parentMobile": "7976245307", "address": "17 Shivaji Nagar Kampu , Tonk", "guardian": "" },
+                { "roll": "O-62", "name": "HARSHITA GOYAL", "fatherName": "MANOJ KUMAR GOYAL", "mobile": "8824918174", "email": "goyalranu686@gmail.com / b240596@skit.ac.in", "parentMobile": "9001516758", "address": "near dp hospital,sbjimandi paota, kotputli behror raj 303106", "guardian": "" },
+                { "roll": "O-63", "name": "HARSHVARDHAN RATHI", "fatherName": "VINAY RATHI", "mobile": "8209587399", "email": "harshvardhanrathi.jpr@gmail.com", "parentMobile": "9414051095", "address": "92/251 agarwal farm gokhle marg mansarovar jaipur", "guardian": "Lalita Rathi (mother)- 9983014183" }
+            ].map(student => ({
+                ...student,
+                age: Math.floor(Math.random() * 5) + 18,
+                picture: `https://placehold.co/100x100/1e1b4b/a5b4fc?text=${student.name.charAt(0)}`
+            }));
+
+            const currentUserSpan = document.getElementById('current-user');
+            const logoutBtn = document.getElementById('logout-btn');
+            const studentListDiv = document.getElementById('student-list');
+            const topRatedListDiv = document.getElementById('top-rated-list');
+            const messageP = document.getElementById('message');
+            
+            // Modals
+            const studentModal = document.getElementById('student-modal');
+            const closeModalBtn = document.getElementById('close-modal');
+            const modalStarContainer = document.getElementById('modal-star-rating');
+            const userManagementModal = document.getElementById('user-management-modal');
+            const closeUserModalBtn = document.getElementById('close-user-modal');
+            const confirmModal = document.getElementById('confirm-modal');
+            
+            // Admin Buttons
+            const manageUsersBtn = document.getElementById('manage-users-btn');
+            const clearRatingsBtn = document.getElementById('clear-ratings-btn');
+            const deleteAllUsersBtn = document.getElementById('delete-all-users-btn');
+
+            // Modal Content
+            const userListUl = document.getElementById('user-list');
+            const voterDetailsContainer = document.getElementById('voter-details-container');
+            const voterListUl = document.getElementById('voter-list');
+            const confirmTitle = document.getElementById('confirm-title');
+            const confirmMessage = document.getElementById('confirm-message');
+            const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+            const confirmActionBtn = document.getElementById('confirm-action-btn');
+
+            let currentUser = null;
+            let currentVoterBtnHandler = null;
+            let confirmAction = null;
+
+            const getRatings = () => JSON.parse(localStorage.getItem(RATINGS_STORAGE_KEY) || '{}');
+            const saveRatings = (ratings) => localStorage.setItem(RATINGS_STORAGE_KEY, JSON.stringify(ratings));
+            const getUsers = () => {
+                const users = localStorage.getItem(USERS_STORAGE_KEY);
+                return users ? JSON.parse(users) : {};
+            };
+            const saveUsers = (users) => localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+            
+            const handleLogout = () => {
+                localStorage.removeItem(LOGGED_IN_USER_KEY);
+                window.location.href = 'login.html';
+            };
+
+            const showConfirmation = (title, message, onConfirm) => {
+                confirmTitle.textContent = title;
+                confirmMessage.textContent = message;
+                confirmAction = onConfirm;
+                confirmModal.classList.remove('hidden');
+            };
+
+            const handleClearAllRatings = () => {
+                showConfirmation('Clear All Ratings', 'This will delete all ratings. This action is irreversible.', () => {
+                    localStorage.removeItem(RATINGS_STORAGE_KEY);
+                    renderStudents();
+                    messageP.textContent = 'All ratings have been cleared.';
+                    setTimeout(() => messageP.textContent = '', 3000);
+                    confirmModal.classList.add('hidden');
+                });
+            };
+
+            const handleDeleteUser = (userToDelete) => {
+                 showConfirmation('Delete User', `Are you sure you want to delete the user "${userToDelete}"? This will also remove all their ratings.`, () => {
+                    let users = getUsers();
+                    delete users[userToDelete];
+                    saveUsers(users);
+
+                    let allRatings = getRatings();
+                    Object.keys(allRatings).forEach(roll => {
+                        allRatings[roll] = allRatings[roll].filter(r => r.user !== userToDelete);
+                    });
+                    saveRatings(allRatings);
+                    
+                    populateUserList();
+                    renderStudents();
+                    messageP.textContent = `User ${userToDelete} has been deleted.`;
+                    setTimeout(() => messageP.textContent = '', 3000);
+                    confirmModal.classList.add('hidden');
+                });
+            };
+
+            const handleDeleteAllUsers = () => {
+                showConfirmation('Delete All Users', 'This will delete all user accounts (except ADMIN). This is irreversible.', () => {
+                    let users = getUsers();
+                    const adminPassword = users['ADMIN'];
+                    let newUsers = {};
+                    if (adminPassword) {
+                        newUsers['ADMIN'] = adminPassword;
+                    }
+                    saveUsers(newUsers);
+                    localStorage.removeItem(RATINGS_STORAGE_KEY);
+                    
+                    populateUserList();
+                    renderStudents();
+                    messageP.textContent = 'All non-admin users have been deleted.';
+                    setTimeout(() => messageP.textContent = '', 3000);
+                    confirmModal.classList.add('hidden');
+                });
+            };
+
+            const handleRemoveRating = (studentRoll, userToRemove) => {
+                const allRatings = getRatings();
+                if (!allRatings[studentRoll]) return;
+
+                allRatings[studentRoll] = allRatings[studentRoll].filter(r => r.user !== userToRemove);
+                
+                saveRatings(allRatings);
+                renderStudents();
+                
+                if (voterDetailsContainer.classList.contains('visible')) {
+                    populateVoterList(studentRoll);
+                }
+
+                messageP.textContent = `Rating from ${userToRemove} has been removed.`;
+                setTimeout(() => messageP.textContent = '', 3000);
+            };
+            
+            const adminUpdateRating = (studentRoll, userToUpdate, newScore) => {
+                const allRatings = getRatings();
+                if (!allRatings[studentRoll]) return;
+
+                const studentRatings = allRatings[studentRoll];
+                const ratingIndex = studentRatings.findIndex(r => r.user === userToUpdate);
+
+                if (ratingIndex > -1) {
+                    studentRatings[ratingIndex].score = newScore;
+                    allRatings[studentRoll] = studentRatings;
+                    saveRatings(allRatings);
+
+                    renderStudents();
+
+                    if (voterDetailsContainer.classList.contains('visible')) {
+                        populateVoterList(studentRoll);
+                    }
+
+                    messageP.textContent = `Rating for ${userToUpdate} updated to ${newScore} stars.`;
+                    setTimeout(() => messageP.textContent = '', 3000);
+                }
+            };
+            
+            const handleAdminStarHover = (starContainer, hoverRating, isLeaving) => {
+                const stars = starContainer.querySelectorAll('.star');
+                const originalRating = parseInt(starContainer.dataset.originalRating);
+                const ratingToShow = isLeaving ? originalRating : hoverRating;
+
+                stars.forEach(star => {
+                    const starValue = parseInt(star.dataset.value);
+                    star.classList.remove('hover-yellow', 'selected');
+
+                    if (starValue <= ratingToShow) {
+                        if (isLeaving) {
+                            star.classList.add('selected');
+                        } else {
+                            star.classList.add('hover-yellow');
+                        }
+                    }
+                });
+            };
+
+            const openModal = (studentRoll) => {
+                const student = STUDENT_DATA.find(s => s.roll === studentRoll);
+                if (!student) return;
+
+                document.getElementById('modal-img').src = student.picture;
+                document.getElementById('modal-name').textContent = student.name;
+                document.getElementById('modal-roll').textContent = `Univ. Roll No: ${student.roll}`;
+                document.getElementById('modal-age').textContent = student.age;
+                document.getElementById('modal-father-name').textContent = student.fatherName || 'N/A';
+                document.getElementById('modal-email').textContent = student.email || 'N/A';
+                document.getElementById('modal-mobile').textContent = student.mobile || 'N/A';
+                document.getElementById('modal-parent-mobile').textContent = student.parentMobile || 'N/A';
+                document.getElementById('modal-address').textContent = student.address || 'N/A';
+                document.getElementById('modal-guardian').textContent = student.guardian || 'N/A';
+                
+                modalStarContainer.innerHTML = '';
+                const allRatings = getRatings();
+                const studentRatings = allRatings[student.roll] || [];
+                const userRating = studentRatings.find(r => r.user === currentUser)?.score || 0;
+
+                for (let i = 5; i >= 1; i--) {
+                    const star = document.createElement('span');
+                    star.className = `star text-4xl ${i <= userRating ? 'selected' : ''}`;
+                    star.dataset.value = i;
+                    star.innerHTML = '&#9733;';
+                    
+                    star.addEventListener('mouseenter', () => handleStarHover(i, true));
+                    star.addEventListener('mouseleave', () => handleStarHover(userRating, false));
+                    star.addEventListener('click', () => {
+                        submitRating(student.roll, i);
+                        closeStudentModal();
+                    });
+                    modalStarContainer.appendChild(star);
+                }
+                handleStarHover(userRating, false);
+
+                const showVotersBtn = document.getElementById('show-voters-btn');
+                voterDetailsContainer.classList.remove('visible');
+                voterListUl.innerHTML = '';
+                showVotersBtn.textContent = 'Show Rating Details';
+                
+                if (currentVoterBtnHandler) {
+                    showVotersBtn.removeEventListener('click', currentVoterBtnHandler);
+                }
+                
+                currentVoterBtnHandler = () => {
+                    toggleVoterDetails(student.roll, showVotersBtn);
+                };
+                showVotersBtn.addEventListener('click', currentVoterBtnHandler);
+
+                studentModal.classList.remove('hidden');
+            };
+
+            const populateVoterList = (studentRoll) => {
+                voterListUl.innerHTML = '';
+                const allRatings = getRatings();
+                const studentRatings = allRatings[studentRoll] || [];
+
+                if (studentRatings.length > 0) {
+                    studentRatings.forEach(rating => {
+                        const li = document.createElement('li');
+                        li.className = 'flex justify-between items-center bg-gray-800/50 p-2 rounded-md';
+                        
+                        const userSpan = document.createElement('span');
+                        userSpan.className = 'flex-grow';
+                        userSpan.textContent = rating.user;
+                        li.appendChild(userSpan);
+
+                        const starContainer = document.createElement('div');
+                        starContainer.className = 'star-rating flex flex-row-reverse justify-center items-center mx-4';
+                        starContainer.dataset.originalRating = rating.score;
+
+                        if (currentUser === 'ADMIN') {
+                            for (let i = 5; i >= 1; i--) {
+                                const star = document.createElement('span');
+                                star.className = `star text-xl ${i <= rating.score ? 'selected' : ''}`;
+                                star.dataset.value = i;
+                                star.innerHTML = '&#9733;';
+                                
+                                star.addEventListener('mouseenter', () => handleAdminStarHover(starContainer, i, false));
+                                star.addEventListener('click', () => adminUpdateRating(studentRoll, rating.user, i));
+                                starContainer.addEventListener('mouseleave', () => handleAdminStarHover(starContainer, 0, true));
+                                
+                                starContainer.appendChild(star);
+                            }
+                        } else {
+                            starContainer.classList.remove('flex-row-reverse');
+                            starContainer.innerHTML = `<span class="font-bold text-yellow-400">${'★'.repeat(rating.score)}${'☆'.repeat(5 - rating.score)}</span>`;
+                        }
+                        li.appendChild(starContainer);
+
+                        if (currentUser === 'ADMIN') {
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.className = 'delete-rating-btn';
+                            deleteBtn.innerHTML = '&times;';
+                            deleteBtn.addEventListener('click', () => handleRemoveRating(studentRoll, rating.user));
+                            li.appendChild(deleteBtn);
+                        }
+                        
+                        voterListUl.appendChild(li);
+                    });
+                } else {
+                    const li = document.createElement('li');
+                    li.textContent = 'No ratings have been submitted for this student yet.';
+                    voterListUl.appendChild(li);
+                }
+            };
+
+            const toggleVoterDetails = (studentRoll, button) => {
+                voterDetailsContainer.classList.toggle('visible');
+
+                if (voterDetailsContainer.classList.contains('visible')) {
+                    button.textContent = 'Hide Rating Details';
+                    populateVoterList(studentRoll);
+                } else {
+                    button.textContent = 'Show Rating Details';
+                    voterListUl.innerHTML = '';
+                }
+            };
+            
+            const populateUserList = () => {
+                userListUl.innerHTML = '';
+                const users = getUsers();
+                Object.keys(users).forEach(username => {
+                    if (username === 'ADMIN') return;
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between items-center bg-gray-800/50 p-2 rounded-md';
+                    li.innerHTML = `<span>${username}</span>`;
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-user-btn';
+                    deleteBtn.innerHTML = '&times;';
+                    deleteBtn.addEventListener('click', () => handleDeleteUser(username));
+                    li.appendChild(deleteBtn);
+
+                    userListUl.appendChild(li);
+                });
+            };
+
+            const handleStarHover = (rating, isHovering) => {
+                const stars = modalStarContainer.querySelectorAll('.star');
+                stars.forEach(star => {
+                    const starValue = 5 - Array.from(stars).indexOf(star);
+                    star.classList.remove('hover-yellow', 'selected');
+                    if (isHovering) {
+                        if (starValue <= rating) {
+                            star.classList.add('hover-yellow');
+                        }
+                    } else {
+                         if (starValue <= rating) {
+                            star.classList.add('selected');
+                        }
+                    }
+                });
+            };
+
+            const closeStudentModal = () => studentModal.classList.add('hidden');
+
+            const renderStudents = () => {
+                studentListDiv.innerHTML = '';
+                topRatedListDiv.innerHTML = '';
+                const allRatings = getRatings();
+
+                const studentsWithRatings = STUDENT_DATA.map(student => {
+                    const studentRatings = allRatings[student.roll] || [];
+                    const ratingCount = studentRatings.length;
+                    const totalScore = studentRatings.reduce((acc, r) => acc + r.score, 0);
+                    const averageRating = ratingCount > 0 ? totalScore / ratingCount : 0;
+                    return { ...student, averageRating, ratingCount };
+                });
+                
+                const sortedByName = [...studentsWithRatings].sort((a, b) => a.name.localeCompare(b.name));
+                const sortedByRating = [...studentsWithRatings].sort((a, b) => b.averageRating - a.averageRating);
+
+                sortedByName.forEach(student => {
+                    const card = document.createElement('div');
+                    card.className = 'student-card p-4 rounded-lg';
+                    card.dataset.roll = student.roll;
+                    card.innerHTML = `
+                        <div class="flex items-center">
+                            <img src="${student.picture}" alt="${student.name}" class="w-16 h-16 rounded-full mr-4 border-2 border-gray-600">
+                            <div>
+                                <h3 class="text-lg font-bold text-white">${student.name}</h3>
+                                <p class="text-sm text-gray-400">Avg: ${student.averageRating.toFixed(2)} (${student.ratingCount} votes)</p>
+                            </div>
+                        </div>`;
+                    card.addEventListener('click', () => openModal(student.roll));
+                    studentListDiv.appendChild(card);
+                });
+
+                sortedByRating.slice(0, 3).forEach((student, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'student-card p-4 rounded-lg';
+                    card.dataset.roll = student.roll;
+                    card.innerHTML = `
+                        <div class="flex items-center">
+                             <span class="text-2xl font-bold mr-4 w-8 text-center text-yellow-300">${index + 1}</span>
+                            <img src="${student.picture}" alt="${student.name}" class="w-12 h-12 rounded-full mr-4 border-2 border-gray-600">
+                            <div>
+                                <h3 class="text-md font-bold text-white">${student.name}</h3>
+                                <p class="text-xs text-gray-400">Avg: ${student.averageRating.toFixed(2)} (${student.ratingCount} votes)</p>
+                            </div>
+                        </div>`;
+                    card.addEventListener('click', () => openModal(student.roll));
+                    topRatedListDiv.appendChild(card);
+                });
+            };
+            
+            const submitRating = (studentRoll, newRating) => {
+                if (newRating === 5) {
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                }
+
+                const allRatings = getRatings();
+                let studentRatings = allRatings[studentRoll] || [];
+                const existingRatingIndex = studentRatings.findIndex(r => r.user === currentUser);
+
+                if (existingRatingIndex > -1) {
+                    studentRatings[existingRatingIndex].score = newRating;
+                } else {
+                    studentRatings.push({ user: currentUser, score: newRating });
+                }
+
+                allRatings[studentRoll] = studentRatings;
+                saveRatings(allRatings);
+
+                const studentName = STUDENT_DATA.find(s => s.roll === studentRoll).name;
+                messageP.textContent = `Your rating for ${studentName} has been set to ${newRating} stars.`;
+                setTimeout(() => messageP.textContent = '', 3000);
+
+                renderStudents();
+            };
+
+            const init = () => {
+                currentUser = localStorage.getItem(LOGGED_IN_USER_KEY);
+                if (!currentUser) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                if (currentUser === 'ADMIN') {
+                    manageUsersBtn.classList.remove('hidden');
+                    clearRatingsBtn.classList.remove('hidden');
+                }
+
+                document.body.style.visibility = 'visible';
+                currentUserSpan.textContent = currentUser;
+                renderStudents();
+
+                // Event Listeners
+                manageUsersBtn.addEventListener('click', () => {
+                    populateUserList();
+                    userManagementModal.classList.remove('hidden');
+                });
+                closeUserModalBtn.addEventListener('click', () => userManagementModal.classList.add('hidden'));
+                deleteAllUsersBtn.addEventListener('click', handleDeleteAllUsers);
+
+                clearRatingsBtn.addEventListener('click', handleClearAllRatings);
+                
+                confirmCancelBtn.addEventListener('click', () => confirmModal.classList.add('hidden'));
+                confirmActionBtn.addEventListener('click', () => {
+                    if (confirmAction) confirmAction();
+                });
+                
+                logoutBtn.addEventListener('click', () => {
+                     showConfirmation('Confirm Logout', 'Are you sure you want to end your session?', handleLogout);
+                });
+
+                closeModalBtn.addEventListener('click', closeStudentModal);
+                studentModal.addEventListener('click', (e) => {
+                    if (e.target === studentModal) closeStudentModal();
+                });
+                
+                const bgAnimation = document.getElementById('bg-animation');
+                const particleCount = 50;
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    const size = Math.random() * 5 + 2;
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.left = `${Math.random() * 100}vw`;
+                    particle.style.animationDelay = `${Math.random() * 10}s`;
+                    particle.style.animationDuration = `${Math.random() * 10 + 5}s`;
+                    bgAnimation.appendChild(particle);
+                }
+            };
+            
+            document.body.style.visibility = 'hidden';
+            init();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Minigames</title>
+    
+    <!-- 1. Tailwind CSS for Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. React & Babel for Logic -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- Using a specific stable version of Babel Standalone -->
+    <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
+
+    <style>
+        /* Custom Animations */
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes zoom-in { from { transform: scale(0.9); } to { transform: scale(1); } }
+        .animate-in { animation: fade-in 0.5s ease-out, zoom-in 0.5s ease-out; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100">
+    <div id="root"></div>
+
+    <!-- 3. Application Code -->
+    <!-- CHANGED: preset to 'react' only to avoid env target errors. Browser handles ES6 natively. -->
+    <script type="text/babel" data-type="module" data-presets="react">
+        // Import Firebase modules from CDN
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+        import { 
+            getAuth, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            signInAnonymously, 
+            onAuthStateChanged,
+            signInWithCustomToken,
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            onSnapshot, 
+            updateDoc, 
+            increment,
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // --- ICONS (Inlined for stability) ---
+        const IconWrapper = ({ children, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
+        );
+
+        const Gamepad2 = (props) => <IconWrapper {...props}><line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/></IconWrapper>;
+        const Users = (props) => <IconWrapper {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconWrapper>;
+        const Trophy = (props) => <IconWrapper {...props}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17"/><path d="M14 14.66V17"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/><path d="M8.5 22v-2.05"/><path d="M15.5 22v-2.05"/></IconWrapper>;
+        const LogIn = (props) => <IconWrapper {...props}><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></IconWrapper>;
+        const Plus = (props) => <IconWrapper {...props}><path d="M5 12h14"/><path d="M12 5v14"/></IconWrapper>;
+        const ArrowRight = (props) => <IconWrapper {...props}><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></IconWrapper>;
+        const Copy = (props) => <IconWrapper {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></IconWrapper>;
+        const BoxIcon = (props) => <IconWrapper {...props}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" x2="12" y1="22.08" y2="12"/></IconWrapper>; 
+        const Scroll = (props) => <IconWrapper {...props}><path d="M8 17.5a5 5 0 0 1 5-4.5h6"/><path d="M19 19a3 3 0 0 0-2.68-1.5"/><path d="M16 13a3 3 0 0 1-3 1.5c-3 0-5-2-5-5"/><path d="M13 13h5.2a3 3 0 0 0 2.8-4.5"/><path d="M19 19c-1.3 0-2.3.8-3.2 1.5"/><path d="M8 2.5A2.5 2.5 0 0 0 5.5 5c0 4.1 3 10.3 5 12.5"/></IconWrapper>;
+        const Scissors = (props) => <IconWrapper {...props}><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" x2="8.12" y1="4" y2="15.88"/><line x1="14.47" x2="20" y1="14.48" y2="20"/><line x1="8.12" x2="12" y1="8.12" y2="12"/></IconWrapper>;
+        const Loader2 = (props) => <IconWrapper {...props} className={`${props.className || ''} animate-spin`}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></IconWrapper>;
+        const AlertCircle = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></IconWrapper>;
+
+
+        // --- CONFIGURATION ---
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'multiplayer-games-v1';
+        
+        // Your web app's Firebase configuration
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDga6DHEpVMni-RhL1khzLdWMQoCsi7EiU",
+            authDomain: "rock-paper-94822.firebaseapp.com",
+            projectId: "rock-paper-94822",
+            storageBucket: "rock-paper-94822.firebasestorage.app",
+            messagingSenderId: "519833321489",
+            appId: "1:519833321489:web:eb85d39ed77ccfd5c371b0",
+            measurementId: "G-2RFMG9S3FF"
+        };
+        
+        const IS_CONFIGURED = !!FIREBASE_CONFIG;
+
+        // Initialize Firebase
+        let app, auth, db, analytics;
+        if (IS_CONFIGURED) {
+            app = initializeApp(FIREBASE_CONFIG);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            analytics = getAnalytics(app);
+        }
+
+        // --- UTILS ---
+        const generateRoomId = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+
+        // --- COMPONENTS ---
+
+        // 1. LOGIN SCREEN
+        const LoginScreen = ({ onLogin }) => {
+            const [loading, setLoading] = React.useState(false);
+            const [error, setError] = React.useState('');
+
+            const handleGoogleLogin = async () => {
+                if (!IS_CONFIGURED) return;
+                setLoading(true);
+                setError('');
+                const provider = new GoogleAuthProvider();
+                try {
+                    await signInWithPopup(auth, provider);
+                } catch (err) {
+                    console.error("Google login error:", err);
+                    setError("Google Sign-In failed (popup blocked or closed). Please try 'Play as Guest'.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleGuestLogin = async () => {
+                if (!IS_CONFIGURED) return;
+                setLoading(true);
+                setError('');
+                try {
+                    await signInAnonymously(auth);
+                } catch (err) {
+                    console.error("Guest login error:", err);
+                    setError("Guest login failed. Please check your internet connection.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans text-slate-100">
+                    <div className="bg-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700">
+                        <div className="text-center mb-8">
+                            <div className="bg-indigo-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/30">
+                                <Gamepad2 className="w-8 h-8 text-white" />
+                            </div>
+                            <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+                                Arcade Hub
+                            </h1>
+                            <p className="text-slate-400 mt-2">Multiplayer Mini-Games</p>
+                        </div>
+
+                        {error && (
+                            <div className="bg-red-500/20 border border-red-500/50 p-3 rounded-lg text-red-200 text-sm mb-4 text-center">
+                                {error}
+                            </div>
+                        )}
+
+                        {!IS_CONFIGURED ? (
+                        <div className="bg-yellow-900/30 border border-yellow-600/50 p-4 rounded-lg text-yellow-200 text-sm mb-6 flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 shrink-0" />
+                            <p>Firebase configuration not detected. The app requires Firebase to run multiplayer features.</p>
+                        </div>
+                        ) : (
+                        <div className="space-y-3">
+                            <button
+                                onClick={handleGoogleLogin}
+                                disabled={loading}
+                                className="w-full bg-white text-slate-900 font-bold py-3 px-6 rounded-xl hover:bg-slate-100 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? <Loader2 className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+                                {loading ? 'Connecting...' : 'Sign in with Google'}
+                            </button>
+
+                            <button
+                                onClick={handleGuestLogin}
+                                disabled={loading}
+                                className="w-full bg-slate-700 text-slate-200 font-bold py-3 px-6 rounded-xl hover:bg-slate-600 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? <Loader2 className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+                                Play as Guest
+                            </button>
+                        </div>
+                        )}
+                        
+                        <p className="text-xs text-slate-500 text-center mt-6">
+                            Use "Play as Guest" if Google Sign-In is blocked by your browser.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // 2. MAIN LOBBY
+        const MainLobby = ({ user, userData, onSelectGame, onLogout }) => {
+            return (
+                <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
+                {/* Header */}
+                <header className="bg-slate-800/50 backdrop-blur-md border-b border-slate-700 sticky top-0 z-10">
+                    <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-lg font-bold">
+                        {user.displayName ? user.displayName[0] : 'G'}
+                        </div>
+                        <div>
+                        <h2 className="font-bold text-sm sm:text-base">{user.displayName || 'Guest Player'}</h2>
+                        <div className="flex items-center gap-2 text-xs text-slate-400">
+                            <Trophy className="w-3 h-3 text-yellow-500" />
+                            <span>Wins: {userData?.stats?.total_wins || 0}</span>
+                        </div>
+                        </div>
+                    </div>
+                    <button onClick={onLogout} className="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg transition-colors">
+                        Logout
+                    </button>
+                    </div>
+                </header>
+
+                {/* Game Grid */}
+                <main className="max-w-6xl mx-auto px-4 py-8">
+                    <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <Gamepad2 className="w-6 h-6 text-indigo-400" />
+                    Select a Game
+                    </h1>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Rock Paper Scissors Card */}
+                    <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-500/10 transition-all group">
+                        <div className="h-40 bg-gradient-to-br from-indigo-900 to-slate-800 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                        <div className="flex gap-4 text-indigo-400 group-hover:scale-110 transition-transform duration-300">
+                            <BoxIcon className="w-8 h-8" />
+                            <Scroll className="w-8 h-8" />
+                            <Scissors className="w-8 h-8" />
+                        </div>
+                        </div>
+                        <h3 className="text-xl font-bold mb-2">Rock Paper Scissors</h3>
+                        <p className="text-slate-400 text-sm mb-6">The classic game of chance and strategy. Best of 3 rounds.</p>
+                        <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3" /> 2 Players</span>
+                        <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded">Strategy</span>
+                        </div>
+                        <button 
+                        onClick={() => onSelectGame('RPS')}
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+                        >
+                        Play Now <ArrowRight className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    {/* Coming Soon Card */}
+                    <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50 opacity-70">
+                        <div className="h-40 bg-slate-800 rounded-xl mb-4 flex items-center justify-center">
+                        <span className="text-slate-600 font-mono text-lg">COMING SOON</span>
+                        </div>
+                        <h3 className="text-xl font-bold mb-2 text-slate-500">Tic Tac Toe</h3>
+                        <p className="text-slate-600 text-sm mb-6">Classic 3x3 grid game.</p>
+                        <button disabled className="w-full bg-slate-700 text-slate-500 font-semibold py-2.5 rounded-xl cursor-not-allowed">
+                        Locked
+                        </button>
+                    </div>
+                    </div>
+                </main>
+                </div>
+            );
+        };
+
+        // 3. ROOM SETUP
+        const RoomSetup = ({ gameId, onBack, onJoinRoom, onCreateRoom }) => {
+            const [roomIdInput, setRoomIdInput] = React.useState('');
+
+            return (
+                <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 flex flex-col items-center justify-center">
+                <button onClick={onBack} className="absolute top-6 left-6 text-slate-400 hover:text-white transition-colors">
+                    ← Back to Lobby
+                </button>
+
+                <div className="max-w-md w-full">
+                    <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold mb-2">Rock Paper Scissors</h1>
+                    <p className="text-slate-400">Join a friend or create a new room</p>
+                    </div>
+
+                    <div className="grid gap-6">
+                    {/* Create Room */}
+                    <button 
+                        onClick={onCreateRoom}
+                        className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white p-6 rounded-2xl shadow-lg transition-all transform hover:-translate-y-1 flex items-center justify-between group"
+                    >
+                        <div className="text-left">
+                        <h3 className="text-xl font-bold">Create Room</h3>
+                        <p className="text-indigo-200 text-sm">Host a new game</p>
+                        </div>
+                        <Plus className="w-8 h-8 text-indigo-200 group-hover:text-white transition-colors" />
+                    </button>
+
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-slate-700"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-slate-900 text-slate-500">OR</span>
+                        </div>
+                    </div>
+
+                    {/* Join Room */}
+                    <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                        <h3 className="text-xl font-bold mb-4">Join Room</h3>
+                        <div className="flex gap-2">
+                        <input 
+                            type="text"
+                            value={roomIdInput}
+                            onChange={(e) => setRoomIdInput(e.target.value.toUpperCase())}
+                            placeholder="ENTER ROOM ID"
+                            className="flex-1 bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-center tracking-widest font-mono text-lg focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-slate-600"
+                            maxLength={6}
+                        />
+                        <button 
+                            onClick={() => onJoinRoom(roomIdInput)}
+                            disabled={roomIdInput.length < 6}
+                            className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 rounded-xl font-bold transition-colors"
+                        >
+                            JOIN
+                        </button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                </div>
+            );
+        };
+
+        // 4. ROCK PAPER SCISSORS GAME
+        const RockPaperScissors = ({ room, user, onLeave, onMove, onReset }) => {
+            const isHost = room.host_id === user.uid;
+            const isGuest = room.guest_id === user.uid;
+            
+            const myMove = isHost ? room.moves.host : room.moves.guest;
+            const opponentMove = isHost ? room.moves.guest : room.moves.host;
+            
+            // Local state for animation/reveal
+            const [showResult, setShowResult] = React.useState(false);
+            const [resultMessage, setResultMessage] = React.useState('');
+            
+            const hasOpponent = !!room.guest_id;
+            const bothMoved = room.moves.host && room.moves.guest;
+
+            React.useEffect(() => {
+                if (bothMoved) {
+                // Determine winner of the round locally for display
+                const h = room.moves.host;
+                const g = room.moves.guest;
+                let msg = '';
+                
+                if (h === g) msg = "It's a Draw!";
+                else if (
+                    (h === 'rock' && g === 'scissors') ||
+                    (h === 'paper' && g === 'rock') ||
+                    (h === 'scissors' && g === 'paper')
+                ) {
+                    msg = isHost ? "You Won this Round!" : "Opponent Won this Round!";
+                } else {
+                    msg = isHost ? "Opponent Won this Round!" : "You Won this Round!";
+                }
+                
+                setResultMessage(msg);
+                setShowResult(true);
+
+                const timer = setTimeout(() => {
+                    setShowResult(false);
+                }, 2500);
+                return () => clearTimeout(timer);
+                }
+            }, [room.moves, isHost, bothMoved]);
+
+            const copyRoomId = () => {
+                navigator.clipboard.writeText(room.id);
+            };
+
+            const getIcon = (move) => {
+                if (!move) return <div className="w-8 h-8 bg-slate-700 rounded-full animate-pulse"></div>;
+                if (move === 'rock') return <BoxIcon className="w-12 h-12 text-indigo-400" />;
+                if (move === 'paper') return <Scroll className="w-12 h-12 text-emerald-400" />;
+                if (move === 'scissors') return <Scissors className="w-12 h-12 text-rose-400" />;
+            };
+
+            if (!hasOpponent) {
+                return (
+                <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
+                    <div className="animate-spin mb-6">
+                    <Loader2 className="w-12 h-12 text-indigo-500" />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-2">Waiting for Player...</h2>
+                    <p className="text-slate-400 mb-8">Share this Room ID with a friend</p>
+                    
+                    <div className="flex items-center gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700 mb-8">
+                    <span className="font-mono text-3xl font-bold tracking-widest text-white">{room.id}</span>
+                    <button onClick={copyRoomId} className="p-2 hover:bg-slate-700 rounded-lg transition-colors" title="Copy ID">
+                        <Copy className="w-5 h-5 text-indigo-400" />
+                    </button>
+                    </div>
+                    <button onClick={onLeave} className="text-slate-500 hover:text-white text-sm">Cancel & Leave</button>
+                </div>
+                );
+            }
+
+            // Determine game over
+            const hostWins = room.scores.host;
+            const guestWins = room.scores.guest;
+            const isGameOver = hostWins >= 2 || guestWins >= 2 || room.current_round > 3;
+            
+            if (isGameOver) {
+                const iWon = (isHost && hostWins > guestWins) || (isGuest && guestWins > hostWins);
+                const isDraw = hostWins === guestWins;
+                
+                return (
+                <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6 animate-in">
+                    <div className="mb-6">
+                    {iWon ? (
+                        <Trophy className="w-24 h-24 text-yellow-400 drop-shadow-lg" />
+                    ) : (
+                        <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center">
+                        <span className="text-4xl">😔</span>
+                        </div>
+                    )}
+                    </div>
+                    <h2 className="text-4xl font-black mb-2 uppercase tracking-wide">
+                    {isDraw ? "It's a Draw!" : iWon ? "Victory!" : "Defeat"}
+                    </h2>
+                    <p className="text-slate-400 mb-8 text-lg">
+                    Final Score: {isHost ? hostWins : guestWins} - {isHost ? guestWins : hostWins}
+                    </p>
+                    <div className="flex gap-4">
+                        <button onClick={onLeave} className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-xl font-bold">
+                            Back to Lobby
+                        </button>
+                    </div>
+                </div>
+                );
+            }
+
+            return (
+                <div className="max-w-4xl mx-auto w-full">
+                {/* Header Info */}
+                <div className="flex justify-between items-center mb-8 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+                    <div className="text-left">
+                    <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">You ({isHost ? 'Host' : 'Guest'})</div>
+                    <div className="text-2xl font-bold text-indigo-400">{isHost ? hostWins : guestWins} Wins</div>
+                    </div>
+                    <div className="text-center px-4">
+                        <div className="text-sm text-slate-400 uppercase tracking-widest">Round</div>
+                        <div className="text-3xl font-black text-white">{room.current_round} / 3</div>
+                    </div>
+                    <div className="text-right">
+                    <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Opponent</div>
+                    <div className="text-2xl font-bold text-rose-400">{isHost ? guestWins : hostWins} Wins</div>
+                    </div>
+                </div>
+
+                {/* Main Game Area */}
+                <div className="relative min-h-[400px] flex flex-col items-center justify-center mb-8">
+                    
+                    {/* Opponent Area (Top) */}
+                    <div className={`transition-all duration-500 ${bothMoved ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-70'}`}>
+                    <div className="flex flex-col items-center">
+                        <div className={`w-24 h-24 rounded-2xl flex items-center justify-center border-4 shadow-xl mb-2
+                            ${bothMoved ? 'bg-slate-800 border-rose-500/50' : 'bg-slate-800 border-slate-700'}
+                        `}>
+                            {bothMoved ? getIcon(opponentMove) : <span className="text-4xl animate-pulse">?</span>}
+                        </div>
+                        <span className="text-sm font-bold text-slate-500">OPPONENT</span>
+                    </div>
+                    </div>
+
+                    {/* VS / Result Divider */}
+                    <div className="my-12 relative w-full flex justify-center">
+                        {showResult ? (
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 whitespace-nowrap">
+                                <span className="bg-white text-slate-900 px-6 py-2 rounded-full font-black text-xl shadow-lg animate-bounce">
+                                    {resultMessage}
+                                </span>
+                            </div>
+                        ) : (
+                            <span className="text-6xl font-black text-slate-800 select-none">VS</span>
+                        )}
+                    </div>
+
+                    {/* Player Area (Bottom) */}
+                    <div className="w-full">
+                        <div className="text-center mb-6">
+                            <span className="text-sm font-bold text-indigo-400">YOUR MOVE</span>
+                        </div>
+                        
+                        <div className="flex justify-center gap-4 sm:gap-8">
+                            {[
+                                { id: 'rock', icon: BoxIcon, color: 'text-indigo-400' },
+                                { id: 'paper', icon: Scroll, color: 'text-emerald-400' },
+                                { id: 'scissors', icon: Scissors, color: 'text-rose-400' }
+                            ].map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => onMove(item.id)}
+                                    disabled={!!myMove || bothMoved}
+                                    className={`
+                                        group relative w-24 h-32 sm:w-32 sm:h-40 rounded-2xl border-b-4 transition-all duration-200 flex flex-col items-center justify-center gap-3
+                                        ${myMove === item.id 
+                                            ? 'bg-slate-700 border-indigo-500 -translate-y-2 shadow-lg shadow-indigo-500/20' 
+                                            : myMove && myMove !== item.id 
+                                                ? 'bg-slate-800/50 border-slate-800 opacity-50 grayscale scale-95'
+                                                : 'bg-slate-800 border-slate-700 hover:-translate-y-2 hover:bg-slate-750 hover:border-slate-600'
+                                        }
+                                    `}
+                                >
+                                    <item.icon className={`w-10 h-10 sm:w-12 sm:h-12 ${item.color}`} />
+                                    <span className="font-bold text-slate-300 uppercase text-sm">{item.id}</span>
+                                    {myMove === item.id && (
+                                        <div className="absolute -top-3 right-0 left-0 flex justify-center">
+                                            <span className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">SELECTED</span>
+                                        </div>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                </div>
+            );
+        };
+
+
+        // --- MAIN APP CONTAINER ---
+        const App = () => {
+            const [user, setUser] = React.useState(null);
+            const [userData, setUserData] = React.useState(null);
+            const [view, setView] = React.useState('login'); // login, lobby, roomSetup, game
+            const [selectedGame, setSelectedGame] = React.useState(null);
+            const [currentRoom, setCurrentRoom] = React.useState(null);
+            const [loading, setLoading] = React.useState(true);
+
+            // 1. Auth Listener
+            React.useEffect(() => {
+                if (!auth) return;
+
+                const unsubscribe = onAuthStateChanged(auth, async (u) => {
+                    if (u) {
+                        setUser(u);
+                        
+                        // Setup User Stats Stream
+                        const userRef = doc(collection(db, 'artifacts', APP_ID, 'users', u.uid, 'profile'), 'stats');
+                        const snap = await getDoc(userRef);
+                        if (!snap.exists()) {
+                            await setDoc(userRef, { total_wins: 0, games_played: 0 }, { merge: true });
+                        }
+                        
+                        const unsubStats = onSnapshot(userRef, (docSnap) => {
+                            if (docSnap.exists()) setUserData({ stats: docSnap.data() });
+                        });
+                        
+                        setView('lobby');
+                        return () => unsubStats();
+                    } else {
+                        setUser(null);
+                        setView('login');
+                    }
+                    setLoading(false);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            // 2. Room Listener
+            React.useEffect(() => {
+                if (!currentRoom?.id || !user) return;
+
+                const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoom.id);
+                const unsub = onSnapshot(roomRef, (docSnap) => {
+                    if (!docSnap.exists()) {
+                        alert("Room closed by host or connection lost.");
+                        setCurrentRoom(null);
+                        setView('lobby');
+                        return;
+                    }
+                    
+                    const data = docSnap.data();
+                    const updatedRoom = { id: docSnap.id, ...data };
+                    setCurrentRoom(updatedRoom);
+
+                    if (updatedRoom.moves.host && updatedRoom.moves.guest) {
+                        if (updatedRoom.host_id === user.uid) {
+                            setTimeout(() => resolveRound(updatedRoom), 3000);
+                        }
+                    }
+                });
+
+                return () => unsub();
+            }, [currentRoom?.id, user]);
+
+            const resolveRound = async (roomData) => {
+                const h = roomData.moves.host;
+                const g = roomData.moves.guest;
+                let hostWin = false;
+                let guestWin = false;
+
+                if (h !== g) {
+                    if ((h === 'rock' && g === 'scissors') || (h === 'paper' && g === 'rock') || (h === 'scissors' && g === 'paper')) {
+                        hostWin = true;
+                    } else {
+                        guestWin = true;
+                    }
+                }
+
+                const updates = {
+                    'moves.host': null,
+                    'moves.guest': null,
+                    current_round: increment(1)
+                };
+
+                if (hostWin) updates['scores.host'] = increment(1);
+                if (guestWin) updates['scores.guest'] = increment(1);
+
+                const newHostScore = hostWin ? roomData.scores.host + 1 : roomData.scores.host;
+                const newGuestScore = guestWin ? roomData.scores.guest + 1 : roomData.scores.guest;
+                
+                if (newHostScore >= 2 || newGuestScore >= 2 || roomData.current_round >= 3) {
+                    updates.status = 'finished';
+                    const winnerId = newHostScore > newGuestScore ? roomData.host_id : (newGuestScore > newHostScore ? roomData.guest_id : null);
+                    if (winnerId) {
+                        const winnerRef = doc(db, 'artifacts', APP_ID, 'users', winnerId, 'profile', 'stats');
+                        updateDoc(winnerRef, { total_wins: increment(1) });
+                    }
+                }
+
+                await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', roomData.id), updates);
+            };
+
+            const handleCreateRoom = async () => {
+                if (!user) return;
+                const roomId = generateRoomId();
+                const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', roomId);
+                
+                const newRoom = {
+                host_id: user.uid,
+                guest_id: null,
+                status: 'waiting',
+                game_type: 'RPS',
+                current_round: 1,
+                scores: { host: 0, guest: 0 },
+                moves: { host: null, guest: null },
+                created_at: serverTimestamp()
+                };
+
+                await setDoc(roomRef, newRoom);
+                setCurrentRoom({ id: roomId, ...newRoom });
+                setView('game');
+            };
+
+            const handleJoinRoom = async (roomId) => {
+                if (!user) return;
+                const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', roomId);
+                const snap = await getDoc(roomRef);
+
+                if (!snap.exists()) {
+                    alert("Room not found!");
+                    return;
+                }
+
+                const data = snap.data();
+                if (data.guest_id && data.guest_id !== user.uid) {
+                    alert("Room is full!");
+                    return;
+                }
+
+                if (data.host_id === user.uid) {
+                    setCurrentRoom({ id: roomId, ...data });
+                    setView('game');
+                    return;
+                }
+
+                await updateDoc(roomRef, { 
+                    guest_id: user.uid,
+                    status: 'playing' 
+                });
+                
+                setCurrentRoom({ id: roomId, ...data, guest_id: user.uid });
+                setView('game');
+            };
+
+            const handleMove = async (move) => {
+                if (!currentRoom || !user) return;
+                const isHost = currentRoom.host_id === user.uid;
+                const field = isHost ? 'moves.host' : 'moves.guest';
+                
+                const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoom.id);
+                await updateDoc(roomRef, { [field]: move });
+            };
+
+            const handleLeaveRoom = () => {
+                setCurrentRoom(null);
+                setView('lobby');
+                setSelectedGame(null);
+            };
+
+            if (!IS_CONFIGURED) return <LoginScreen />;
+            if (loading) return <div className="h-screen w-full bg-slate-900 flex items-center justify-center"><Loader2 className="w-10 h-10 text-indigo-500 animate-spin" /></div>;
+
+            return (
+                <div>
+                {view === 'login' && <LoginScreen />}
+                {view === 'lobby' && (
+                    <MainLobby 
+                        user={user} 
+                        userData={userData}
+                        onLogout={() => signOut(auth)}
+                        onSelectGame={(game) => {
+                            setSelectedGame(game);
+                            setView('roomSetup');
+                        }} 
+                    />
+                )}
+                {view === 'roomSetup' && (
+                    <RoomSetup 
+                        gameId={selectedGame}
+                        onBack={() => setView('lobby')}
+                        onCreateRoom={handleCreateRoom}
+                        onJoinRoom={handleJoinRoom}
+                    />
+                )}
+                {view === 'game' && currentRoom && (
+                    <div className="min-h-screen bg-slate-900 text-slate-100 p-4">
+                        <button onClick={handleLeaveRoom} className="mb-4 text-slate-400 hover:text-white flex items-center gap-2">
+                            ← Quit Game
+                        </button>
+                        <RockPaperScissors 
+                            room={currentRoom}
+                            user={user}
+                            onMove={handleMove}
+                            onLeave={handleLeaveRoom}
+                        />
+                    </div>
+                )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
