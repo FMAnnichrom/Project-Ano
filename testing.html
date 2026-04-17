@@ -57,9 +57,10 @@
       useEffect(() => {
         const updateScale = () => {
           if (window.innerWidth < 768) {
-            // Mobile naturally stacks in Tailwind flex. Scale tightly around the board width.
-            const scaleW = window.innerWidth / 400;
-            setUiScale(Math.min(scaleW, 1.1));
+            // Mobile forces row layout. Scale to fit exactly ~460px base width side-by-side.
+            const scaleW = window.innerWidth / 460;
+            const scaleH = window.innerHeight / 800;
+            setUiScale(Math.min(scaleW, scaleH, 1.0));
           } else {
             // Desktop scales relative to full horizontal view bounds.
             const scaleW = window.innerWidth / 1100;
@@ -506,7 +507,7 @@
             Divide with the numbers to solve the rows and columns.
           </p>
 
-          <div className="flex flex-col md:flex-row gap-12 md:gap-16 items-center z-10 mt-6 relative w-full max-w-3xl justify-center">
+          <div className="flex flex-row gap-4 sm:gap-12 md:gap-16 items-center z-10 mt-6 relative w-full max-w-3xl justify-center">
             {!hasStarted && (
               <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#ffe5dfe6] backdrop-blur-md rounded-2xl p-8 shadow-2xl pb-16 transform translate-y-12">
                 <h2 className="text-4xl font-black mb-12 text-[#cc2e2e] drop-shadow-md tracking-wider text-center" style={{ textShadow: '2px 2px 0 white, -2px -2px 0 white, 2px -2px 0 white, -2px 2px 0 white' }}>
