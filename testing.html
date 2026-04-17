@@ -56,9 +56,16 @@
       const [uiScale, setUiScale] = useState(1);
       useEffect(() => {
         const updateScale = () => {
-          const scaleW = window.innerWidth / 1100;
-          const scaleH = window.innerHeight / 850;
-          setUiScale(Math.min(scaleW, scaleH, 1.3)); 
+          if (window.innerWidth < 768) {
+            // Mobile naturally stacks in Tailwind flex. Scale tightly around the board width.
+            const scaleW = window.innerWidth / 400;
+            setUiScale(Math.min(scaleW, 1.1));
+          } else {
+            // Desktop scales relative to full horizontal view bounds.
+            const scaleW = window.innerWidth / 1100;
+            const scaleH = window.innerHeight / 850;
+            setUiScale(Math.min(scaleW, scaleH, 1.3)); 
+          }
         };
         window.addEventListener('resize', updateScale);
         updateScale();
