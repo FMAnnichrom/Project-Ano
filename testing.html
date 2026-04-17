@@ -358,6 +358,7 @@
        */
       const handlePointerDown = (e, source, value) => {
         if (gameOver || !hasStarted || confirmPrompt) return;
+        try { e.target.setPointerCapture(e.pointerId); } catch(ex){}
         const rect = e.currentTarget.getBoundingClientRect();
         setDragInfo({
           item: { source, value },
@@ -397,6 +398,7 @@
       };
 
       const handleGlobalPointerUp = (e) => {
+        try { e.target.releasePointerCapture(e.pointerId); } catch(ex){}
         if (!dragInfo || dragInfo.status !== 'DRAGGING' || !hasStarted || confirmPrompt) return;
         const dist = Math.hypot(e.clientX - dragInfo.startX, e.clientY - dragInfo.startY);
         if (dist < 10) {
@@ -442,7 +444,7 @@
       }
 
       return (
-        <div className="min-h-screen w-full bg-[#ffe5df] font-sans flex flex-col items-center py-6 relative overflow-hidden touch-none select-none" onPointerMove={handleGlobalPointerMove} onPointerUp={handleGlobalPointerUp} onPointerLeave={handleGlobalPointerUp}>
+        <div className="min-h-screen w-full bg-[#ffe5df] font-sans flex flex-col items-center py-6 relative overflow-hidden touch-none select-none" onPointerMove={handleGlobalPointerMove} onPointerUp={handleGlobalPointerUp} onPointerLeave={handleGlobalPointerUp} onPointerCancel={handleGlobalPointerUp}>
           <style>{` 
              @keyframes combineGlow { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.2); filter: brightness(1.4); box-shadow: 0 0 20px rgba(255, 255, 255, 1); z-index: 20; } 100% { transform: scale(1); filter: brightness(1); box-shadow: 0 0 0 rgba(255, 255, 255, 0); } } 
              .anim-combine { animation: combineGlow 0.4s ease-out forwards; } 
@@ -650,7 +652,7 @@
             </div>
           </div>
 
-          <div className="absolute bottom-4 text-[#c2185b] font-bold text-xs flex gap-4 opacity-70 z-10 px-4 text-center">
+          <div className="mt-12 text-[#c2185b] font-bold text-xs flex flex-wrap justify-center gap-4 opacity-70 z-10 px-4 text-center w-full max-w-lg mb-8">
             <span><kbd className="bg-white/50 px-1 rounded">Z</kbd> Undo</span>
             <span><kbd className="bg-white/50 px-1 rounded">R</kbd> Restart</span>
             <span className="hidden sm:inline"><kbd className="bg-white/50 px-1 rounded">1, 2, 3</kbd> Difficulty</span>
