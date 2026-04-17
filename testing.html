@@ -65,7 +65,7 @@
             // Desktop scales relative to full horizontal view bounds.
             const scaleW = window.innerWidth / 1100;
             const scaleH = window.innerHeight / 850;
-            setUiScale(Math.min(scaleW, scaleH, 1.3)); 
+            setUiScale(Math.min(scaleW, scaleH, 1.3));
           }
         };
         window.addEventListener('resize', updateScale);
@@ -366,7 +366,7 @@
        */
       const handlePointerDown = (e, source, value) => {
         if (gameOver || !hasStarted || confirmPrompt) return;
-        try { e.target.setPointerCapture(e.pointerId); } catch(ex){}
+        try { e.target.setPointerCapture(e.pointerId); } catch (ex) { }
         const rect = e.currentTarget.getBoundingClientRect();
         setDragInfo({
           item: { source, value },
@@ -406,7 +406,7 @@
       };
 
       const handleGlobalPointerUp = (e) => {
-        try { e.target.releasePointerCapture(e.pointerId); } catch(ex){}
+        try { e.target.releasePointerCapture(e.pointerId); } catch (ex) { }
         if (!dragInfo || dragInfo.status !== 'DRAGGING' || !hasStarted || confirmPrompt) return;
         const dist = Math.hypot(e.clientX - dragInfo.startX, e.clientY - dragInfo.startY);
         if (dist < 10) {
@@ -434,10 +434,11 @@
         const isWhiteText = colors.text === 'white';
         return (
           <div onPointerDown={(e) => { if (isDraggable && onPointerDown) onPointerDown(e, value); }}
-            className={`w-[60px] h-[60px] flex items-center justify-center rounded-xl font-black text-[28px] shadow-[0_2px_4px_rgba(0,0,0,0.3)] select-none transition-transform ${isSelected ? 'ring-4 ring-white/80 scale-110 z-10' : ''} ${isDraggable && !gameOver && hasStarted && !confirmPrompt ? 'cursor-grab active:cursor-grabbing hover:scale-105 touch-none' : 'cursor-default'} ${extraClasses}`}
+            className={`w-[60px] h-[60px] relative overflow-hidden flex items-center justify-center rounded-xl font-black text-[28px] shadow-[0_2px_4px_rgba(0,0,0,0.3)] select-none transition-transform ${isSelected ? 'ring-4 ring-white/80 scale-110 z-10' : ''} ${isDraggable && !gameOver && hasStarted && !confirmPrompt ? 'cursor-grab active:cursor-grabbing hover:scale-105 touch-none' : 'cursor-default'} ${extraClasses}`}
             style={{ backgroundColor: colors.bg, color: colors.text, borderTop: '4px solid rgba(255,255,255,0.4)', borderBottom: '4px solid rgba(0,0,0,0.15)', borderLeft: '2px solid rgba(255,255,255,0.2)', borderRight: '2px solid rgba(0,0,0,0.1)' }}
           >
-            <span style={{ textShadow: isWhiteText ? '1px 1px 2px rgba(0,0,0,0.4)' : 'none' }}>{value}</span>
+            <div className="absolute inset-0 top-0 h-[45%] bg-gradient-to-b from-white/40 to-transparent pointer-events-none rounded-t-xl" />
+            <span className="relative z-10" style={{ textShadow: isWhiteText ? '1px 1px 2px rgba(0,0,0,0.4)' : 'none' }}>{value}</span>
           </div>
         );
       };
@@ -446,8 +447,8 @@
       const isSnappingBack = dragInfo?.status === 'SNAPPING_BACK';
       let ghostX = 0, ghostY = 0, ghostScale = 1;
       if (dragInfo) {
-        ghostX = isSnappingBack ? dragInfo.originRect.left + dragInfo.originRect.width/2 : (isSnapped ? dragInfo.snapX : dragInfo.currentX);
-        ghostY = isSnappingBack ? dragInfo.originRect.top + dragInfo.originRect.height/2 : (isSnapped ? dragInfo.snapY : dragInfo.currentY);
+        ghostX = isSnappingBack ? dragInfo.originRect.left + dragInfo.originRect.width / 2 : (isSnapped ? dragInfo.snapX : dragInfo.currentX);
+        ghostY = isSnappingBack ? dragInfo.originRect.top + dragInfo.originRect.height / 2 : (isSnapped ? dragInfo.snapY : dragInfo.currentY);
         ghostScale = isSnappingBack ? uiScale : (isSnapped ? 1.05 * uiScale : 1.15 * uiScale);
       }
 
@@ -485,187 +486,187 @@
 
           <div className="flex flex-col items-center w-full origin-top transition-transform duration-200 z-10" style={{ transform: `scale(${uiScale})` }}>
             <div className="w-full max-w-4xl px-8 flex justify-between items-center z-10 mb-4">
-            <button onClick={() => hasStarted ? setConfirmPrompt({ type: 'BACK' }) : null} className="w-12 h-12 bg-[#8c52ff] border-2 border-white text-white rounded-full font-bold flex items-center justify-center shadow-md hover:scale-105 transition-transform" title="Back to Menu">
-              {hasStarted ? (
-                <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" /></svg>
-              ) : (
-                <svg className="w-5 h-5 fill-current opacity-50" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
-              )}
-            </button>
-            <div className="flex flex-col items-center">
-              <h1 className="text-[32px] font-black text-[#4a3525] tracking-widest uppercase" style={{ WebkitTextStroke: '1px white' }}>JUST DIVIDE</h1>
-              <div className="flex items-center gap-2 font-bold text-[#4a3525] text-xl mt-1">
-                <span className="w-16 text-center">{formatTime(timer)}</span>
+              <button onClick={() => hasStarted ? setConfirmPrompt({ type: 'BACK' }) : null} className="w-12 h-12 bg-[#8c52ff] border-2 border-white text-white rounded-full font-bold flex items-center justify-center shadow-md hover:scale-105 transition-transform" title="Back to Menu">
+                {hasStarted ? (
+                  <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" /></svg>
+                ) : (
+                  <svg className="w-5 h-5 fill-current opacity-50" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                )}
+              </button>
+              <div className="flex flex-col items-center">
+                <h1 className="text-[32px] font-black text-[#4a3525] tracking-widest uppercase" style={{ WebkitTextStroke: '1px white' }}>JUST DIVIDE</h1>
+                <div className="flex items-center gap-2 font-bold text-[#4a3525] text-xl mt-1">
+                  <span className="w-16 text-center">{formatTime(timer)}</span>
+                </div>
               </div>
+              <button onClick={() => setHintsEnabled(!hintsEnabled)} className={`w-12 h-12 border-2 border-white text-white rounded-full font-bold text-xl flex items-center justify-center shadow-md hover:scale-105 transition-all duration-300 ${hintsEnabled ? 'bg-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.8)]' : 'bg-[#00c853]'}`}>
+                {hintsEnabled ? '💡' : '?'}
+              </button>
             </div>
-            <button onClick={() => setHintsEnabled(!hintsEnabled)} className={`w-12 h-12 border-2 border-white text-white rounded-full font-bold text-xl flex items-center justify-center shadow-md hover:scale-105 transition-all duration-300 ${hintsEnabled ? 'bg-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.8)]' : 'bg-[#00c853]'}`}>
-              {hintsEnabled ? '💡' : '?'}
-            </button>
-          </div>
 
-          <p className="font-black tracking-wide uppercase text-lg mb-10 z-10 text-center px-4" style={{ color: '#ff6b6b', textShadow: '2px 2px 0px white, -2px -2px 0px white, 2px -2px 0px white, -2px 2px 0px white' }}>
-            Divide with the numbers to solve the rows and columns.
-          </p>
+            <p className="font-black tracking-wide uppercase text-lg mb-10 z-10 text-center px-4" style={{ color: '#ff6b6b', textShadow: '2px 2px 0px white, -2px -2px 0px white, 2px -2px 0px white, -2px 2px 0px white' }}>
+              Divide with the numbers to solve the rows and columns.
+            </p>
 
-          <div className="flex flex-row gap-4 sm:gap-12 md:gap-16 items-center z-10 mt-6 relative w-full max-w-3xl justify-center">
-            {!hasStarted && (
-              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#ffe5dfe6] backdrop-blur-md rounded-2xl p-8 shadow-2xl pb-16 transform translate-y-12">
-                <h2 className="text-4xl font-black mb-12 text-[#cc2e2e] drop-shadow-md tracking-wider text-center" style={{ textShadow: '2px 2px 0 white, -2px -2px 0 white, 2px -2px 0 white, -2px 2px 0 white' }}>
-                  CHOOSE DIFFICULTY
-                </h2>
-                <div className="flex gap-6">
-                  <button onClick={() => { resetGame(1); setHasStarted(true); }} className="bg-[#4db6ac] hover:bg-[#26a69a] text-white font-black px-6 py-8 rounded-xl shadow-[0_6px_0_#00695c] border-[4px] border-white text-xl transform transition hover:scale-105 active:translate-y-2 active:shadow-none w-32 flex flex-col items-center gap-2">
-                    <span className="text-3xl">😊</span>
-                    <span>EASY</span>
-                  </button>
-                  <button onClick={() => { resetGame(2); setHasStarted(true); }} className="bg-[#ffca28] hover:bg-[#ffb300] text-white font-black px-6 py-8 rounded-xl shadow-[0_6px_0_#ff6f00] border-[4px] border-white text-xl transform transition hover:scale-105 active:translate-y-2 active:shadow-none w-32 flex flex-col items-center gap-2">
-                    <span className="text-3xl">😐</span>
-                    <span>MED</span>
-                  </button>
-                  <button onClick={() => { resetGame(3); setHasStarted(true); }} className="bg-[#e53935] hover:bg-[#d32f2f] text-white font-black px-6 py-8 rounded-xl shadow-[0_6px_0_#b71c1c] border-[4px] border-white text-xl transform transition hover:scale-105 active:translate-y-2 active:shadow-none w-32 flex flex-col items-center gap-2">
-                    <span className="text-3xl">😢</span>
-                    <span>HARD</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className={`relative mt-12 transition-opacity duration-500 ${!hasStarted ? 'opacity-30 blur-sm pointer-events-none' : 'opacity-100'}`}>
-
-              <div className="bg-[#148e9c] p-3 rounded-[20px] border-[6px] border-white shadow-[0_8px_0_rgba(0,0,0,0.1)] relative z-0 mt-[10px] mb-[20px]">
-                <div className="absolute -top-[60px] left-1/2 -translate-x-1/2 z-20 pointer-events-none drop-shadow-md">
-                  <img src="assets/cat.png" alt="Cat" className="object-contain w-[300px] max-w-none select-none" draggable={false} />
-                </div>
-                <div className="absolute -bottom-[16px] left-0 right-0 flex justify-between px-8 z-10 pointer-events-none">
-                  <div className="bg-[#cc2e2e] text-white font-black px-2 py-[4px] rounded-[10px] border-[3px] border-white shadow-[0_3px_0_rgba(0,0,0,0.15)] text-[12px] tracking-wider w-[85px] text-center shadow-inner">
-                    LEVEL {level}
-                  </div>
-                  <div className="bg-[#cc2e2e] text-white font-black px-2 py-[4px] rounded-[10px] border-[3px] border-white shadow-[0_3px_0_rgba(0,0,0,0.15)] text-[12px] tracking-wider w-[85px] text-center shadow-inner">
-                    SCORE {score}
+            <div className="flex flex-row gap-4 sm:gap-12 md:gap-16 items-center z-10 mt-6 relative w-full max-w-3xl justify-center">
+              {!hasStarted && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#ffe5dfe6] backdrop-blur-md rounded-2xl p-8 shadow-2xl pb-16 transform translate-y-12">
+                  <h2 className="text-4xl font-black mb-12 text-[#cc2e2e] drop-shadow-md tracking-wider text-center" style={{ textShadow: '2px 2px 0 white, -2px -2px 0 white, 2px -2px 0 white, -2px 2px 0 white' }}>
+                    CHOOSE DIFFICULTY
+                  </h2>
+                  <div className="flex gap-6">
+                    <button onClick={() => { resetGame(1); setHasStarted(true); }} className="bg-[#4db6ac] hover:bg-[#26a69a] text-white font-black px-6 py-8 rounded-xl shadow-[0_6px_0_#00695c] border-[4px] border-white text-xl transform transition hover:scale-105 active:translate-y-2 active:shadow-none w-32 flex flex-col items-center gap-2">
+                      <span className="text-3xl">😊</span>
+                      <span>EASY</span>
+                    </button>
+                    <button onClick={() => { resetGame(2); setHasStarted(true); }} className="bg-[#ffca28] hover:bg-[#ffb300] text-white font-black px-6 py-8 rounded-xl shadow-[0_6px_0_#ff6f00] border-[4px] border-white text-xl transform transition hover:scale-105 active:translate-y-2 active:shadow-none w-32 flex flex-col items-center gap-2">
+                      <span className="text-3xl">😐</span>
+                      <span>MED</span>
+                    </button>
+                    <button onClick={() => { resetGame(3); setHasStarted(true); }} className="bg-[#e53935] hover:bg-[#d32f2f] text-white font-black px-6 py-8 rounded-xl shadow-[0_6px_0_#b71c1c] border-[4px] border-white text-xl transform transition hover:scale-105 active:translate-y-2 active:shadow-none w-32 flex flex-col items-center gap-2">
+                      <span className="text-3xl">😢</span>
+                      <span>HARD</span>
+                    </button>
                   </div>
                 </div>
+              )}
 
-                {combos.map(combo => (
-                  <div key={combo.id} className="absolute z-50 pointer-events-none anim-combo text-[28px] font-black text-yellow-300 drop-shadow-md whitespace-nowrap" style={{ left: `${(combo.c * 25) + 12.5}%`, top: `${(combo.r * 25)}%`, textShadow: '2px 2px 0 #e65100, -2px -2px 0 #e65100, 2px -2px 0 #e65100, -2px 2px 0 #e65100' }}>
-                    COMBO x{combo.count}!
+              <div className={`relative mt-12 transition-opacity duration-500 ${!hasStarted ? 'opacity-30 blur-sm pointer-events-none' : 'opacity-100'}`}>
+
+                <div className="bg-[#148e9c] px-3 pb-3 pt-[52px] rounded-[20px] border-[6px] border-white shadow-[0_8px_0_rgba(0,0,0,0.1)] relative z-0 mt-[40px] mb-[20px]">
+                  <div className="absolute -top-[55px] left-1/2 -translate-x-1/2 z-30 pointer-events-none drop-shadow-md">
+                    <img src="assets/cat.png" alt="Cat" className="object-contain w-[280px] max-w-none select-none" draggable={false} />
                   </div>
-                ))}
+                  <div className="absolute top-[8px] left-[6px] right-[6px] flex justify-between z-20 pointer-events-none drop-shadow-md">
+                    <div className="bg-[#cc2e2e] text-white font-black px-3 py-[4px] rounded-[10px] border-[3px] border-white shadow-[0_3px_0_rgba(0,0,0,0.15)] text-[14px] tracking-wider min-w-[90px] w-auto whitespace-nowrap text-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)] relative">
+                      LEVEL {level}
+                    </div>
+                    <div className="bg-[#cc2e2e] text-white font-black px-3 py-[4px] rounded-[10px] border-[3px] border-white shadow-[0_3px_0_rgba(0,0,0,0.15)] text-[14px] tracking-wider min-w-[90px] w-auto whitespace-nowrap text-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)] relative">
+                      SCORE {score}
+                    </div>
+                  </div>
 
-                {particles.map(p => (
-                  <div key={p.id} className="absolute w-[12px] h-[12px] rounded-full z-40 anim-particle pointer-events-none"
-                    style={{ left: `${p.c * 68 + 12 + 24}px`, top: `${p.r * 68 + 12 + 24}px`, backgroundColor: p.color, '--tx': p.tx, '--ty': p.ty }} />
-                ))}
+                  {combos.map(combo => (
+                    <div key={combo.id} className="absolute z-50 pointer-events-none anim-combo text-[28px] font-black text-yellow-300 drop-shadow-md whitespace-nowrap" style={{ left: `${(combo.c * 25) + 12.5}%`, top: `${(combo.r * 25)}%`, textShadow: '2px 2px 0 #e65100, -2px -2px 0 #e65100, 2px -2px 0 #e65100, -2px 2px 0 #e65100' }}>
+                      COMBO x{combo.count}!
+                    </div>
+                  ))}
 
-                <div className="grid grid-cols-4 gap-2">
-                  {grid.map((row, rIndex) => row.map((cellValue, cIndex) => {
-                    let isHintHighlight = false;
-                    if (hintsEnabled && !gameOver && hasStarted && !confirmPrompt && cellValue === null) {
-                      const checkTile = selectedItem ? selectedItem.value : queue[0];
-                      const neighbors = [[rIndex + 1, cIndex], [rIndex - 1, cIndex], [rIndex, cIndex + 1], [rIndex, cIndex - 1]];
-                      for (let [nr, nc] of neighbors) {
-                        if (nr >= 0 && nr < 4 && nc >= 0 && nc < 4 && grid[nr][nc] !== null) {
-                          let nVal = grid[nr][nc];
-                          if (checkTile === nVal || (checkTile > nVal && checkTile % nVal === 0) || (nVal > checkTile && nVal % checkTile === 0)) {
-                            isHintHighlight = true;
-                            break;
+                  {particles.map(p => (
+                    <div key={p.id} className="absolute w-[12px] h-[12px] rounded-full z-40 anim-particle pointer-events-none"
+                      style={{ left: `${p.c * 68 + 12 + 24}px`, top: `${p.r * 68 + 12 + 24}px`, backgroundColor: p.color, '--tx': p.tx, '--ty': p.ty }} />
+                  ))}
+
+                  <div className="grid grid-cols-4 gap-2">
+                    {grid.map((row, rIndex) => row.map((cellValue, cIndex) => {
+                      let isHintHighlight = false;
+                      if (hintsEnabled && !gameOver && hasStarted && !confirmPrompt && cellValue === null) {
+                        const checkTile = selectedItem ? selectedItem.value : queue[0];
+                        const neighbors = [[rIndex + 1, cIndex], [rIndex - 1, cIndex], [rIndex, cIndex + 1], [rIndex, cIndex - 1]];
+                        for (let [nr, nc] of neighbors) {
+                          if (nr >= 0 && nr < 4 && nc >= 0 && nc < 4 && grid[nr][nc] !== null) {
+                            let nVal = grid[nr][nc];
+                            if (checkTile === nVal || (checkTile > nVal && checkTile % nVal === 0) || (nVal > checkTile && nVal % checkTile === 0)) {
+                              isHintHighlight = true;
+                              break;
+                            }
                           }
                         }
                       }
-                    }
-                    const isAnimating = animatingCells.includes(`${rIndex},${cIndex}`);
+                      const isAnimating = animatingCells.includes(`${rIndex},${cIndex}`);
 
-                    return (
-                      <div key={`${rIndex}-${cIndex}`} data-grid-r={rIndex} data-grid-c={cIndex} onClick={() => handleGridClick(rIndex, cIndex)} className={`w-[60px] h-[60px] bg-[#0c707d] rounded-xl relative overflow-hidden transition-colors duration-300 ${isHintHighlight ? 'border-[3px] border-yellow-400 shadow-[inset_0_0_15px_rgba(250,204,21,0.5)] animate-pulse' : 'border-[2px] border-white/20'} ${selectedItem && cellValue === null ? 'hover:bg-[#11818f] cursor-pointer ring-2 ring-white/50' : ''}`}>
-                        {cellValue !== null && (
-                          <div className={`absolute inset-0 top-[-2px] left-[-2px] right-[-2px] bottom-[-2px] origin-center ${isAnimating ? 'anim-combine' : ''}`}>
-                            <Tile value={cellValue} isDraggable={false} extraClasses="w-full h-full !rounded-xl !border-0" />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }))}
-                </div>
-              </div>
-
-              {gameOver && hasStarted && (
-                <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/70 rounded-[20px] text-white backdrop-blur-sm mt-8">
-                  <h2 className="text-4xl font-black mb-2 text-[#ff6b6b] drop-shadow-md tracking-wider">GAME OVER</h2>
-                  <p className="text-xl font-bold mb-6">Final Score: {score}</p>
-                  <button onClick={() => resetGame()} className="bg-[#00c853] hover:bg-[#00e676] text-white font-black px-8 py-4 rounded-full shadow-[0_4px_0_#009624] border-[3px] border-white transform transition active:translate-y-1 active:shadow-none text-xl">
-                    PLAY AGAIN
-                  </button>
-                </div>
-              )}
-              {confirmPrompt && hasStarted && !gameOver && (
-                <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/70 rounded-[20px] text-white backdrop-blur-sm mt-4 p-4 text-center">
-                  <h2 className="text-2xl font-black mb-2 text-[#ffca28] drop-shadow-md tracking-wider">
-                    {confirmPrompt.type === 'BACK' ? 'RETURN TO START?' : `CHANGE TO LEVEL ${confirmPrompt.value}?`}
-                  </h2>
-                  <p className="text-md font-bold mb-6 opacity-90 px-2">Your current game will be lost.</p>
-                  <div className="flex gap-4">
-                    <button onClick={() => {
-                      setConfirmPrompt(null);
-                    }} className="bg-[#e53935] hover:bg-[#d32f2f] text-white font-black px-4 py-2 rounded-xl shadow-[0_4px_0_#b71c1c] border-[3px] border-white transform transition active:translate-y-1 active:shadow-none">
-                      CANCEL
-                    </button>
-                    <button onClick={() => {
-                      if (confirmPrompt.type === 'BACK') { setHasStarted(false); }
-                      else { resetGame(confirmPrompt.value); }
-                      setConfirmPrompt(null);
-                    }} className="bg-[#4db6ac] hover:bg-[#00897b] text-white font-black px-4 py-2 rounded-xl shadow-[0_4px_0_#00695c] border-[3px] border-white transform transition active:translate-y-1 active:shadow-none">
-                      YES
-                    </button>
+                      return (
+                        <div key={`${rIndex}-${cIndex}`} data-grid-r={rIndex} data-grid-c={cIndex} onClick={() => handleGridClick(rIndex, cIndex)} className={`w-[60px] h-[60px] bg-[#0c707d] rounded-xl relative overflow-hidden transition-colors duration-300 ${isHintHighlight ? 'border-[3px] border-yellow-400 shadow-[inset_0_0_15px_rgba(250,204,21,0.5)] animate-pulse' : 'shadow-[inset_0_6px_8px_rgba(0,0,0,0.4)] border-2 border-[#095762] drop-shadow-sm'} ${selectedItem && cellValue === null ? 'hover:bg-[#11818f] cursor-pointer ring-2 ring-white/50' : ''}`}>
+                          {cellValue !== null && (
+                            <div className={`absolute inset-0 top-[-2px] left-[-2px] right-[-2px] bottom-[-2px] origin-center ${isAnimating ? 'anim-combine' : ''}`}>
+                              <Tile value={cellValue} isDraggable={false} extraClasses="w-full h-full !rounded-xl !border-0" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }))}
                   </div>
                 </div>
-              )}
 
-            </div>
-
-            <div className={`relative flex flex-col items-center w-[110px] bg-[#fcb45b] border-[4px] border-[#e28e2d] rounded-full py-6 shadow-[0_6px_0_rgba(0,0,0,0.1)] transition-opacity duration-500 ${!hasStarted ? 'opacity-30 blur-sm pointer-events-none' : 'opacity-100'}`}>
-              <div className="flex flex-col items-center w-full z-0">
-                <div data-keep="true" onClick={handleKeepClick} className={`w-[68px] h-[68px] bg-[#a7ecea] rounded-2xl border-[4px] border-white shadow-inner flex items-center justify-center ${selectedItem && selectedItem.source === 'ACTIVE' ? 'cursor-pointer hover:bg-[#8ee0de]' : ''}`}>
-                  {keepVal !== null && (
-                    <div style={{ opacity: (dragInfo?.item.source === 'KEEP' && !isSnappingBack) ? 0 : 1 }}>
-                      <Tile value={keepVal} isDraggable={true} onPointerDown={(e) => handlePointerDown(e, 'KEEP', keepVal)} extraClasses="scale-[0.9] origin-center" isSelected={selectedItem?.source === 'KEEP'} />
+                {gameOver && hasStarted && (
+                  <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/70 rounded-[20px] text-white backdrop-blur-sm mt-8">
+                    <h2 className="text-4xl font-black mb-2 text-[#ff6b6b] drop-shadow-md tracking-wider">GAME OVER</h2>
+                    <p className="text-xl font-bold mb-6">Final Score: {score}</p>
+                    <button onClick={() => resetGame()} className="bg-[#00c853] hover:bg-[#00e676] text-white font-black px-8 py-4 rounded-full shadow-[0_4px_0_#009624] border-[3px] border-white transform transition active:translate-y-1 active:shadow-none text-xl">
+                      PLAY AGAIN
+                    </button>
+                  </div>
+                )}
+                {confirmPrompt && hasStarted && !gameOver && (
+                  <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/70 rounded-[20px] text-white backdrop-blur-sm mt-4 p-4 text-center">
+                    <h2 className="text-2xl font-black mb-2 text-[#ffca28] drop-shadow-md tracking-wider">
+                      {confirmPrompt.type === 'BACK' ? 'RETURN TO START?' : `CHANGE TO LEVEL ${confirmPrompt.value}?`}
+                    </h2>
+                    <p className="text-md font-bold mb-6 opacity-90 px-2">Your current game will be lost.</p>
+                    <div className="flex gap-4">
+                      <button onClick={() => {
+                        setConfirmPrompt(null);
+                      }} className="bg-[#e53935] hover:bg-[#d32f2f] text-white font-black px-4 py-2 rounded-xl shadow-[0_4px_0_#b71c1c] border-[3px] border-white transform transition active:translate-y-1 active:shadow-none">
+                        CANCEL
+                      </button>
+                      <button onClick={() => {
+                        if (confirmPrompt.type === 'BACK') { setHasStarted(false); }
+                        else { resetGame(confirmPrompt.value); }
+                        setConfirmPrompt(null);
+                      }} className="bg-[#4db6ac] hover:bg-[#00897b] text-white font-black px-4 py-2 rounded-xl shadow-[0_4px_0_#00695c] border-[3px] border-white transform transition active:translate-y-1 active:shadow-none">
+                        YES
+                      </button>
                     </div>
-                  )}
-                </div>
-                <span className="text-[#c17a1e] font-black text-[13px] tracking-widest mt-2 uppercase">KEEP</span>
+                  </div>
+                )}
+
               </div>
 
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#f8f9fa] p-2 px-3 rounded-[15px] shadow-[0_4px_10px_rgba(0,0,0,0.2)] border-[4px] border-white flex justify-center items-center gap-2 z-20 w-max">
-                <div className="w-[55px] h-[55px] shrink-0" style={{ opacity: (dragInfo?.item.source === 'ACTIVE' && !isSnappingBack) ? 0 : 1 }}>
-                  <Tile value={queue[0]} isDraggable={true} onPointerDown={(e) => handlePointerDown(e, 'ACTIVE', queue[0])} isSelected={selectedItem?.source === 'ACTIVE'} extraClasses="w-full h-full !rounded-[10px] !text-[20px]" />
+              <div className={`relative flex flex-col items-center w-[110px] bg-[#fcb45b] border-[4px] border-[#e28e2d] rounded-full py-6 shadow-[0_6px_0_rgba(0,0,0,0.1)] transition-opacity duration-500 ${!hasStarted ? 'opacity-30 blur-sm pointer-events-none' : 'opacity-100'}`}>
+                <div className="flex flex-col items-center w-full z-0">
+                  <div data-keep="true" onClick={handleKeepClick} className={`w-[68px] h-[68px] bg-[#a7ecea] rounded-2xl border-[4px] border-white shadow-inner flex items-center justify-center ${selectedItem && selectedItem.source === 'ACTIVE' ? 'cursor-pointer hover:bg-[#8ee0de]' : ''}`}>
+                    {keepVal !== null && (
+                      <div style={{ opacity: (dragInfo?.item.source === 'KEEP' && !isSnappingBack) ? 0 : 1 }}>
+                        <Tile value={keepVal} isDraggable={true} onPointerDown={(e) => handlePointerDown(e, 'KEEP', keepVal)} extraClasses="scale-[0.9] origin-center" isSelected={selectedItem?.source === 'KEEP'} />
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[#c17a1e] font-black text-[13px] tracking-widest mt-2 uppercase">KEEP</span>
                 </div>
-                <div className="w-[45px] h-[45px] opacity-80 pointer-events-none shrink-0">
-                  <Tile value={queue[1]} isDraggable={false} extraClasses="w-full h-full !rounded-[8px] !text-[16px] grayscale relative" />
+
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#f8f9fa] p-2 px-3 rounded-[15px] shadow-[0_4px_10px_rgba(0,0,0,0.2)] border-[4px] border-white flex justify-center items-center gap-2 z-20 w-max">
+                  <div className="w-[55px] h-[55px] shrink-0" style={{ opacity: (dragInfo?.item.source === 'ACTIVE' && !isSnappingBack) ? 0 : 1 }}>
+                    <Tile value={queue[0]} isDraggable={true} onPointerDown={(e) => handlePointerDown(e, 'ACTIVE', queue[0])} isSelected={selectedItem?.source === 'ACTIVE'} extraClasses="w-full h-full !rounded-[10px] !text-[20px]" />
+                  </div>
+                  <div className="w-[45px] h-[45px] opacity-80 pointer-events-none shrink-0">
+                    <Tile value={queue[1]} isDraggable={false} extraClasses="w-full h-full !rounded-[8px] !text-[16px] grayscale relative" />
+                  </div>
+                  <div className="w-[35px] h-[35px] opacity-60 pointer-events-none shrink-0">
+                    <Tile value={queue[2]} isDraggable={false} extraClasses="w-full h-full !rounded-[6px] !text-[14px] grayscale relative" />
+                  </div>
                 </div>
-                <div className="w-[35px] h-[35px] opacity-60 pointer-events-none shrink-0">
-                  <Tile value={queue[2]} isDraggable={false} extraClasses="w-full h-full !rounded-[6px] !text-[14px] grayscale relative" />
+
+                <div className="h-[70px]"></div>
+
+                <div className="flex flex-col items-center w-full z-0 mt-4">
+                  <span className="text-[#e53935] font-black text-[13px] tracking-widest mb-2 uppercase">TRASH</span>
+                  <div data-trash="true" onClick={handleTrashClick} className={`w-[68px] h-[68px] bg-white rounded-2xl border-[4px] border-[#e53935] shadow-inner flex flex-col items-center justify-center transition-colors relative overflow-hidden ${trashAnim ? 'anim-trash-pop z-50' : ''} ${(trashCount > 0 && selectedItem) ? 'bg-red-50 cursor-pointer' : ''}`}>
+                    <svg className="w-8 h-8 text-[#e53935] mb-1" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M9 3V4H4V6H5V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V6H20V4H15V3H9ZM7 6H17V19H7V6ZM9 8V17H15V8H13Z" />
+                    </svg>
+                    <div className="absolute bottom-0 w-full bg-[#e53935] text-white font-bold text-[11px] text-center py-[2px]">X{trashCount}</div>
+                  </div>
                 </div>
+
               </div>
-
-              <div className="h-[70px]"></div>
-
-              <div className="flex flex-col items-center w-full z-0 mt-4">
-                <span className="text-[#e53935] font-black text-[13px] tracking-widest mb-2 uppercase">TRASH</span>
-                <div data-trash="true" onClick={handleTrashClick} className={`w-[68px] h-[68px] bg-white rounded-2xl border-[4px] border-[#e53935] shadow-inner flex flex-col items-center justify-center transition-colors relative overflow-hidden ${trashAnim ? 'anim-trash-pop z-50' : ''} ${(trashCount > 0 && selectedItem) ? 'bg-red-50 cursor-pointer' : ''}`}>
-                  <svg className="w-8 h-8 text-[#e53935] mb-1" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M9 3V4H4V6H5V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V6H20V4H15V3H9ZM7 6H17V19H7V6ZM9 8V17H15V8H13Z" />
-                  </svg>
-                  <div className="absolute bottom-0 w-full bg-[#e53935] text-white font-bold text-[11px] text-center py-[2px]">X{trashCount}</div>
-                </div>
-              </div>
-
             </div>
-          </div>
 
-          <div className="mt-12 text-[#c2185b] font-bold text-xs flex flex-wrap justify-center gap-4 opacity-70 z-10 px-4 text-center w-full max-w-lg mb-8">
-            <span><kbd className="bg-white/50 px-1 rounded">Z</kbd> Undo</span>
-            <span><kbd className="bg-white/50 px-1 rounded">R</kbd> Restart</span>
-            <span className="hidden sm:inline"><kbd className="bg-white/50 px-1 rounded">1, 2, 3</kbd> Difficulty</span>
-            <span><kbd className="bg-white/50 px-1 rounded">G</kbd> Hints</span>
-          </div>
+            <div className="mt-12 text-[#c2185b] font-bold text-xs flex flex-wrap justify-center gap-4 opacity-70 z-10 px-4 text-center w-full max-w-lg mb-8">
+              <span><kbd className="bg-white/50 px-1 rounded">Z</kbd> Undo</span>
+              <span><kbd className="bg-white/50 px-1 rounded">R</kbd> Restart</span>
+              <span className="hidden sm:inline"><kbd className="bg-white/50 px-1 rounded">1, 2, 3</kbd> Difficulty</span>
+              <span><kbd className="bg-white/50 px-1 rounded">G</kbd> Hints</span>
+            </div>
           </div>
         </div>
       );
